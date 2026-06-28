@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "courses": "Cursos",
+    "teachers": "Profesores",
+    "login": "Iniciar sesión",
+    "register": "Registrarse"
+  },
+  "auth": {
+    "login_title": "Bienvenido de vuelta",
+    "login_subtitle": "Accede a tu cuenta de estudiante",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "login_btn": "Iniciar sesión",
+    "or": "o continúa con",
+    "google": "Continuar con Google",
+    "no_account": "¿Sin cuenta?",
+    "register_link": "Regístrate aquí"
+  },
+  "dashboard": {
+    "welcome": "Bienvenido",
+    "active_courses": "Cursos activos",
+    "attendance": "Asistencia",
+    "pending_homework": "Tareas pendientes",
+    "points": "Puntos",
+    "next_classes": "Próximas clases",
+    "my_courses": "Mis cursos",
+    "pending_tasks": "Tareas pendientes",
+    "see_all": "Ver todo"
+  }
+}

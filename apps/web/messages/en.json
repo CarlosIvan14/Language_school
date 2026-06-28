@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "courses": "Courses",
+    "teachers": "Teachers",
+    "login": "Sign in",
+    "register": "Sign up"
+  },
+  "auth": {
+    "login_title": "Welcome back",
+    "login_subtitle": "Sign in to your student account",
+    "email": "Email address",
+    "password": "Password",
+    "forgot_password": "Forgot your password?",
+    "login_btn": "Sign in",
+    "or": "or continue with",
+    "google": "Continue with Google",
+    "no_account": "No account?",
+    "register_link": "Sign up here"
+  },
+  "dashboard": {
+    "welcome": "Welcome",
+    "active_courses": "Active courses",
+    "attendance": "Attendance",
+    "pending_homework": "Pending homework",
+    "points": "Points",
+    "next_classes": "Upcoming classes",
+    "my_courses": "My courses",
+    "pending_tasks": "Pending tasks",
+    "see_all": "See all"
+  }
+}

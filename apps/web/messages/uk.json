@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "courses": "Курси",
+    "teachers": "Викладачі",
+    "login": "Увійти",
+    "register": "Зареєструватися"
+  },
+  "auth": {
+    "login_title": "Ласкаво просимо",
+    "login_subtitle": "Увійдіть до свого облікового запису",
+    "email": "Електронна пошта",
+    "password": "Пароль",
+    "forgot_password": "Забули пароль?",
+    "login_btn": "Увійти",
+    "or": "або продовжити через",
+    "google": "Продовжити з Google",
+    "no_account": "Немає акаунта?",
+    "register_link": "Зареєструватися тут"
+  },
+  "dashboard": {
+    "welcome": "Ласкаво просимо",
+    "active_courses": "Активні курси",
+    "attendance": "Відвідуваність",
+    "pending_homework": "Невиконані завдання",
+    "points": "Бали",
+    "next_classes": "Наступні заняття",
+    "my_courses": "Мої курси",
+    "pending_tasks": "Невиконані завдання",
+    "see_all": "Переглянути всі"
+  }
+}
