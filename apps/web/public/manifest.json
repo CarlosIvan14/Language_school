@@ -1,0 +1,16 @@
+{
+  "name": "EspañolPro",
+  "short_name": "EspañolPro",
+  "description": "Plataforma de gestión para escuelas de español",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1E3A5F",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "es",
+  "orientation": "portrait"
+}

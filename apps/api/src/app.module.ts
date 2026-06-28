@@ -11,6 +11,11 @@ import { MaterialsModule } from './materials/materials.module'
 import { HomeworkModule } from './homework/homework.module'
 import { PaymentsModule } from './payments/payments.module'
 import { CertificatesModule } from './certificates/certificates.module'
+import { ChatModule } from './chat/chat.module'
+import { ExamsModule } from './exams/exams.module'
+import { AttendanceModule } from './attendance/attendance.module'
+import { CrmModule } from './crm/crm.module'
+import { GamificationModule } from './gamification/gamification.module'
 
 @Module({
   imports: [
@@ -29,6 +34,11 @@ import { CertificatesModule } from './certificates/certificates.module'
     HomeworkModule,
     PaymentsModule,
     CertificatesModule,
+    ChatModule,
+    ExamsModule,
+    AttendanceModule,
+    CrmModule,
+    GamificationModule,
   ],
 })
 export class AppModule {}
