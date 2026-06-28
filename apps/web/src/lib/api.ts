@@ -65,12 +65,15 @@ export const auth = {
     localStorage.setItem('access_token', res.accessToken)
     localStorage.setItem('refresh_token', res.refreshToken)
     localStorage.setItem('user', JSON.stringify(res.user))
+    // Also set cookie so middleware can read it (server-side auth check)
+    document.cookie = `access_token=${res.accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`
   },
 
   clearTokens: () => {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user')
+    document.cookie = 'access_token=; path=/; max-age=0'
   },
 
   getUser: () => {
