@@ -6,6 +6,11 @@ import { AuthModule } from './auth/auth.module'
 import { CoursesModule } from './courses/courses.module'
 import { StudentsModule } from './students/students.module'
 import { TeachersModule } from './teachers/teachers.module'
+import { AdminModule } from './admin/admin.module'
+import { MaterialsModule } from './materials/materials.module'
+import { HomeworkModule } from './homework/homework.module'
+import { PaymentsModule } from './payments/payments.module'
+import { CertificatesModule } from './certificates/certificates.module'
 
 @Module({
   imports: [
@@ -19,6 +24,11 @@ import { TeachersModule } from './teachers/teachers.module'
     CoursesModule,
     StudentsModule,
     TeachersModule,
+    AdminModule,
+    MaterialsModule,
+    HomeworkModule,
+    PaymentsModule,
+    CertificatesModule,
   ],
 })
 export class AppModule {}
