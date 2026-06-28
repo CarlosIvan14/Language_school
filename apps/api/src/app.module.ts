@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
+import { RolesGuard } from './common/guards/roles.guard'
 import { ConfigModule } from '@nestjs/config'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { PrismaModule } from './prisma/prisma.module'
@@ -41,6 +43,9 @@ import { NotificationsModule } from './notifications/notifications.module'
     CrmModule,
     GamificationModule,
     NotificationsModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
 })
 export class AppModule {}

@@ -1,10 +1,9 @@
-import { NestFactory, Reflector } from '@nestjs/core'
+import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import helmet from 'helmet'
 import { AppModule } from './app.module'
 import { AllExceptionsFilter } from './common/filters/http-exception.filter'
-import { RolesGuard } from './common/guards/roles.guard'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true })
@@ -25,7 +24,6 @@ async function bootstrap() {
   )
 
   app.useGlobalFilters(new AllExceptionsFilter())
-  app.useGlobalGuards(new RolesGuard(new Reflector()))
 
   app.setGlobalPrefix('api/v1')
 
