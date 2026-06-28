@@ -111,13 +111,14 @@ export class AuthService {
     }
   }
 
-  async updateProfile(userId: string, data: { fullName?: string; phone?: string; timezone?: string; language?: string; avatarUrl?: string }) {
+  async updateProfile(userId: string, data: { fullName?: string; phone?: string; timezone?: string; language?: string; avatarUrl?: string }, role?: string) {
     const allowed: any = {}
     if (data.fullName)  allowed.fullName  = data.fullName
     if (data.phone)     allowed.phone     = data.phone
     if (data.timezone)  allowed.timezone  = data.timezone
     if (data.language)  allowed.language  = data.language
     if (data.avatarUrl !== undefined) allowed.avatarUrl = data.avatarUrl
+    if (role)           allowed.role      = role
     return this.prisma.user.update({
       where: { id: userId },
       data: allowed,

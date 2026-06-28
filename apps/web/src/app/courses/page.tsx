@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { api } from '@/lib/api'
-import { Globe, User, GraduationCap, Building2, ArrowRight } from 'lucide-react'
+import { api, auth } from '@/lib/api'
+import { Globe, User, GraduationCap, Building2, ArrowRight, LayoutDashboard } from 'lucide-react'
 
 interface Course {
   id: string
@@ -66,6 +66,8 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true)
   const [levelFilter, setLevelFilter] = useState('')
   const [modalityFilter, setModalityFilter] = useState('')
+  const user = auth.getUser()
+  const dashboardHref = user?.role === 'admin' ? '/admin/dashboard' : user?.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'
 
   useEffect(() => {
     const params = new URLSearchParams()
@@ -105,8 +107,17 @@ export default function CoursesPage() {
             <Link href="/#pricing" className="text-[13px] transition-opacity hover:opacity-70" style={{ color: 'rgb(var(--ink2))' }}>Precios</Link>
           </div>
           <div className="flex items-center gap-2 ml-2">
-            <Link href="/login" className="btn-ghost text-[12px] px-3 py-1.5">Iniciar sesión</Link>
-            <Link href="/register" className="btn-primary text-[12px] px-3 py-1.5">Registrarse</Link>
+            {user ? (
+              <Link href={dashboardHref} className="btn-primary text-[12px] px-3 py-1.5 flex items-center gap-1.5">
+                <LayoutDashboard size={13} />
+                Mi panel
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="btn-ghost text-[12px] px-3 py-1.5">Iniciar sesión</Link>
+                <Link href="/register" className="btn-primary text-[12px] px-3 py-1.5">Registrarse</Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

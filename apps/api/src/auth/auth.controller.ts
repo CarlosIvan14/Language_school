@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Patch, Body, UseGuards, Req, HttpCode } from '@nestjs/common'
+import { Controller, Post, Get, Patch, Body, UseGuards, Req, HttpCode, ForbiddenException } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { ThrottlerGuard } from '@nestjs/throttler'
 import { AuthGuard } from '@nestjs/passport'
@@ -9,7 +10,10 @@ import { LoginDto } from './dto/login.dto'
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+  ) {}
 
   @Post('register')
   @UseGuards(ThrottlerGuard)
@@ -50,5 +54,15 @@ export class AuthController {
   @ApiBearerAuth()
   updateProfile(@Req() req: any, @Body() body: { fullName?: string; phone?: string; timezone?: string; language?: string; avatarUrl?: string }) {
     return this.authService.updateProfile(req.user.id, body)
+  }
+
+  @Post('make-admin')
+  @HttpCode(200)
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  async makeAdmin(@Req() req: any, @Body() body: { secret: string }) {
+    const expected = this.config.get<string>('ADMIN_SETUP_SECRET')
+    if (!expected || body.secret !== expected) throw new ForbiddenException('Invalid secret')
+    return this.authService.updateProfile(req.user.id, {} as any, 'admin')
   }
 }
