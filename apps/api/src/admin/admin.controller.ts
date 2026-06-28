@@ -2,11 +2,12 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
 import { AdminService } from './admin.service'
+import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 
 @ApiTags('admin')
 @Controller('admin')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)   // JWT first → sets req.user, then RolesGuard reads it
 @ApiBearerAuth()
 @Roles('admin')
 export class AdminController {
