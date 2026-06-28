@@ -1,81 +1,99 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
-import { SupabaseService } from '../supabase/supabase.service'
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common'
+import { PrismaService } from '../prisma/prisma.service'
 import type { CreateCourseDto } from './dto/create-course.dto'
 
 @Injectable()
 export class CoursesService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(private prisma: PrismaService) {}
 
   async findAll(filters: { level?: string; modality?: string } = {}) {
-    let query = this.supabase.admin
-      .from('courses')
-      .select('*, teachers(*, profiles(full_name, avatar_url))')
-      .in('status', ['active', 'full'])
-      .order('starts_at', { ascending: true })
-
-    if (filters.level) query = query.eq('level', filters.level)
-    if (filters.modality) query = query.eq('modality', filters.modality)
-
-    const { data, error } = await query
-    if (error) throw new BadRequestException(error.message)
-    return data
+    return this.prisma.course.findMany({
+      where: {
+        status: { in: ['active', 'full'] },
+        ...(filters.level ? { level: filters.level as any } : {}),
+        ...(filters.modality ? { modality: filters.modality as any } : {}),
+      },
+      include: {
+        teacher: { include: { user: { select: { fullName: true, avatarUrl: true } } } },
+        _count: { select: { enrollments: { where: { status: 'active' } } } },
+      },
+      orderBy: { startsAt: 'asc' },
+    })
   }
 
   async findOne(id: string) {
-    const { data, error } = await this.supabase.admin
-      .from('courses')
-      .select('*, teachers(*, profiles(full_name, avatar_url))')
-      .eq('id', id)
-      .single()
-
-    if (error || !data) throw new NotFoundException(`Course ${id} not found`)
-    return data
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      include: {
+        teacher: { include: { user: { select: { fullName: true, avatarUrl: true } } } },
+        sessions: { orderBy: { scheduledAt: 'asc' }, take: 10 },
+        _count: { select: { enrollments: { where: { status: 'active' } } } },
+      },
+    })
+    if (!course) throw new NotFoundException(`Course ${id} not found`)
+    return course
   }
 
   async create(dto: CreateCourseDto) {
-    const { data, error } = await this.supabase.admin
-      .from('courses')
-      .insert(dto)
-      .select()
-      .single()
-
-    if (error) throw new BadRequestException(error.message)
-    return data
+    return this.prisma.course.create({ data: dto as any })
   }
 
   async update(id: string, dto: Partial<CreateCourseDto>) {
-    const { data, error } = await this.supabase.admin
-      .from('courses')
-      .update(dto)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw new BadRequestException(error.message)
-    return data
+    await this.findOne(id)
+    return this.prisma.course.update({ where: { id }, data: dto as any })
   }
 
   async remove(id: string) {
-    const { error } = await this.supabase.admin
-      .from('courses')
-      .update({ status: 'cancelled' })
-      .eq('id', id)
-
-    if (error) throw new BadRequestException(error.message)
-    return { success: true }
+    await this.findOne(id)
+    return this.prisma.course.update({ where: { id }, data: { status: 'cancelled' } })
   }
 
-  async enroll(courseId: string) {
-    // Check current enrollment count
-    const { count } = await this.supabase.admin
-      .from('enrollments')
-      .select('*', { count: 'exact', head: true })
-      .eq('course_id', courseId)
-      .eq('status', 'active')
-
+  async enroll(courseId: string, userId: string) {
     const course = await this.findOne(courseId)
 
-    const status = (count ?? 0) >= course.capacity ? 'waitlist' : 'active'
-    return { status, message: status === 'waitlist' ? 'Added to waitlist' : 'Enrolled successfully' }
+    const student = await this.prisma.student.findUnique({ where: { userId } })
+    if (!student) throw new BadRequestException('User is not a student')
+
+    const existing = await this.prisma.enrollment.findUnique({
+      where: { studentId_courseId: { studentId: student.id, courseId } },
+    })
+    if (existing) throw new ConflictException('Already enrolled in this course')
+
+    const activeCount = await this.prisma.enrollment.count({
+      where: { courseId, status: 'active' },
+    })
+
+    const status = activeCount >= course.capacity ? 'waitlist' : 'active'
+
+    const enrollment = await this.prisma.enrollment.create({
+      data: { studentId: student.id, courseId, status },
+    })
+
+    if (status === 'active') {
+      await this.prisma.pointsEntry.create({
+        data: { studentId: student.id, points: 50, reason: 'Inscripción a nuevo curso' },
+      })
+    }
+
+    return {
+      enrollment,
+      status,
+      message: status === 'waitlist' ? 'Añadido a lista de espera' : 'Inscripción exitosa',
+    }
+  }
+
+  async unenroll(courseId: string, userId: string) {
+    const student = await this.prisma.student.findUnique({ where: { userId } })
+    if (!student) throw new BadRequestException('User is not a student')
+
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: { studentId_courseId: { studentId: student.id, courseId } },
+    })
+    if (!enrollment) throw new NotFoundException('Enrollment not found')
+
+    return this.prisma.enrollment.update({
+      where: { id: enrollment.id },
+      data: { status: 'cancelled' },
+    })
   }
 }

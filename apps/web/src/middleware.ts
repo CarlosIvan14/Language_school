@@ -1,39 +1,23 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PROTECTED_ROUTES = ['/student', '/teacher', '/admin']
-const AUTH_ROUTES = ['/login', '/register']
+const PROTECTED = ['/student', '/teacher', '/admin']
+const AUTH_ONLY = ['/login', '/register']
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request: { headers: request.headers } })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) { return request.cookies.get(name)?.value },
-        set(name, value, options) { response.cookies.set({ name, value, ...options }) },
-        remove(name, options) { response.cookies.set({ name, value: '', ...options }) },
-      },
-    }
-  )
-
-  const { data: { user } } = await supabase.auth.getUser()
-
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get('access_token')?.value
   const pathname = request.nextUrl.pathname
-  const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r))
-  const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r))
 
-  if (isProtected && !user) {
+  const isProtected = PROTECTED.some((p) => pathname.startsWith(p))
+  const isAuthOnly = AUTH_ONLY.some((p) => pathname.startsWith(p))
+
+  if (isProtected && !token) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  if (isAuthRoute && user) {
+  if (isAuthOnly && token) {
     return NextResponse.redirect(new URL('/student/dashboard', request.url))
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {

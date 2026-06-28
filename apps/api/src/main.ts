@@ -1,25 +1,21 @@
-import { NestFactory } from '@nestjs/core'
+import { NestFactory, Reflector } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
-import * as helmet from 'helmet'
+import helmet from 'helmet'
 import { AppModule } from './app.module'
+import { AllExceptionsFilter } from './common/filters/http-exception.filter'
+import { RolesGuard } from './common/guards/roles.guard'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
-  // Security headers
-  app.use(helmet.default())
+  app.use(helmet())
 
-  // CORS — only allow frontend origin
   app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL ?? 'http://localhost:3000',
-      'http://localhost:3000',
-    ],
+    origin: [process.env.FRONTEND_URL ?? 'http://localhost:3000'],
     credentials: true,
   })
 
-  // Global validation pipe — strip unknown fields, reject invalid ones
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -28,23 +24,25 @@ async function bootstrap() {
     })
   )
 
-  // Global API prefix
+  app.useGlobalFilters(new AllExceptionsFilter())
+  app.useGlobalGuards(new RolesGuard(new Reflector()))
+
   app.setGlobalPrefix('api/v1')
 
-  // Swagger docs (dev only)
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('EspañolPro API')
-      .setDescription('Language School Management Platform API')
+      .setDescription('Language School Management Platform')
       .setVersion('1.0')
       .addBearerAuth()
       .build()
-    const document = SwaggerModule.createDocument(app, config)
-    SwaggerModule.setup('api/docs', app, document)
+    SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config))
+    console.log(`📚 Swagger: http://localhost:${process.env.PORT ?? 3001}/api/docs`)
   }
 
-  await app.listen(process.env.PORT ?? 3001)
-  console.log(`API running on http://localhost:${process.env.PORT ?? 3001}`)
+  const port = process.env.PORT ?? 3001
+  await app.listen(port)
+  console.log(`🚀 API running on http://localhost:${port}/api/v1`)
 }
 
 bootstrap()
