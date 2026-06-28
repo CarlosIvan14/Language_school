@@ -4,18 +4,26 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { auth } from '@/lib/api'
 
-const navItems = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: '⊞' },
-  { href: '/admin/students', label: 'Estudiantes', icon: '👥' },
-  { href: '/admin/teachers', label: 'Profesores', icon: '🧑‍🏫' },
-  { href: '/admin/courses', label: 'Cursos', icon: '📚' },
-  { href: '/admin/enrollments', label: 'Inscripciones', icon: '📝' },
-  { href: '/admin/payments', label: 'Pagos', icon: '💳' },
-  { href: '/admin/crm', label: 'CRM', icon: '🎯' },
-  { href: '/admin/certificates', label: 'Certificados', icon: '🎓' },
-  { href: '/admin/reports', label: 'Reportes', icon: '📊' },
-  { href: '/admin/settings', label: 'Configuración', icon: '⚙️' },
+const nav = [
+  { href: '/admin/dashboard',    label: 'Dashboard',    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+  { href: '/admin/students',     label: 'Estudiantes',  icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+  { href: '/admin/courses',      label: 'Cursos',       icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+  { href: '/admin/payments',     label: 'Pagos',        icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
+  { href: '/admin/crm',          label: 'CRM',          icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+  { href: '/admin/certificates', label: 'Certificados', icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z' },
+  { href: '/admin/reports',      label: 'Reportes',     icon: 'M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z' },
+  { href: '/admin/settings',     label: 'Ajustes',      icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
 ]
+
+function Icon({ d }: { d: string }) {
+  return (
+    <svg className="w-[15px] h-[15px] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+      {d.split(' M').map((p, i) => (
+        <path key={i} strokeLinecap="round" strokeLinejoin="round" d={i === 0 ? p : 'M' + p} />
+      ))}
+    </svg>
+  )
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -30,33 +38,90 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <aside className="w-52 flex-shrink-0 border-r border-border bg-card flex flex-col">
-        <div className="flex items-center gap-2 px-4 py-4 border-b border-border">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-heading font-medium text-xs">E</div>
-          <span className="font-heading font-medium text-sm text-foreground">EspañolPro</span>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'rgb(var(--bg))' }}>
+
+      {/* Sidebar */}
+      <aside className="w-[196px] flex-shrink-0 flex flex-col"
+        style={{
+          background: 'rgb(var(--s0))',
+          borderRight: '1px solid rgba(255,255,255,0.05)',
+        }}>
+
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 px-4 h-[52px] flex-shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0"
+            style={{ background: 'rgb(var(--blue))' }}>E</div>
+          <span className="text-[13px] font-semibold tracking-tight" style={{ color: 'rgb(var(--ink))' }}>
+            EspañolPro
+          </span>
         </div>
-        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-          <p className="text-[10px] text-muted-foreground px-2 py-1 uppercase tracking-wide">Administración</p>
-          {navItems.map(item => (
-            <Link key={item.href} href={item.href}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${pathname === item.href ? 'bg-primary/10 text-primary font-medium border-l-2 border-primary' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
-              <span className="text-base leading-none">{item.icon}</span>{item.label}
-            </Link>
-          ))}
+
+        {/* Nav */}
+        <nav className="flex-1 px-2 py-3 space-y-px overflow-y-auto">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] px-2 py-1.5 mb-1"
+            style={{ color: 'rgb(var(--ink3))' }}>
+            Admin
+          </p>
+
+          {nav.map(item => {
+            const active = pathname === item.href || pathname.startsWith(item.href + '/')
+            return (
+              <Link key={item.href} href={item.href}
+                className="flex items-center gap-2.5 px-2.5 py-[7px] rounded-lg text-[12.5px] transition-all"
+                style={{
+                  background: active ? 'rgba(79,142,247,0.1)' : 'transparent',
+                  color: active ? 'rgb(var(--blue))' : 'rgb(var(--ink2))',
+                  fontWeight: active ? 500 : 400,
+                  transitionDuration: '150ms',
+                  transitionTimingFunction: 'cubic-bezier(0.32,0.72,0,1)',
+                }}
+                onMouseEnter={e => {
+                  if (!active) {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                    e.currentTarget.style.color = 'rgb(var(--ink))'
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!active) {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = 'rgb(var(--ink2))'
+                  }
+                }}>
+                <Icon d={item.icon} />
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
-        <div className="border-t border-border p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary flex-shrink-0">{initials}</div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-medium text-foreground truncate">{user?.fullName ?? 'Admin'}</p>
-              <p className="text-[10px] text-muted-foreground">Administrador</p>
+
+        {/* User footer */}
+        <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
+              style={{ background: 'rgba(79,142,247,0.15)', color: 'rgb(var(--blue))' }}>
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>
+                {user?.fullName ?? 'Administrador'}
+              </p>
+              <p className="text-[10px]" style={{ color: 'rgb(var(--ink2))' }}>Admin</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="w-full text-left text-xs text-muted-foreground hover:text-foreground transition-colors px-1">Cerrar sesión</button>
+          <button onClick={handleLogout}
+            className="mt-2 text-[11px] transition-colors"
+            style={{ color: 'rgb(var(--ink2))' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--err))')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgb(var(--ink2))')}>
+            Cerrar sesión
+          </button>
         </div>
       </aside>
-      <div className="flex-1 overflow-auto"><main className="min-h-full">{children}</main></div>
+
+      <div className="flex-1 overflow-auto relative z-10">
+        {children}
+      </div>
     </div>
   )
 }

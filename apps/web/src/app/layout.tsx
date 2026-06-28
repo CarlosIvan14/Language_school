@@ -1,44 +1,32 @@
 import type { Metadata } from 'next'
-import { Inter, Sora } from 'next/font/google'
-import { ThemeProvider } from 'next-themes'
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({
-  subsets: ['latin', 'cyrillic'],
-  variable: '--font-inter',
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-jakarta',
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
 })
 
-const sora = Sora({
+const mono = JetBrains_Mono({
   subsets: ['latin'],
-  variable: '--font-sora',
+  variable: '--font-mono',
   display: 'swap',
+  weight: ['400', '500'],
 })
 
 export const metadata: Metadata = {
-  title: {
-    default: 'EspañolPro — Spanish Language School',
-    template: '%s | EspañolPro',
-  },
-  description:
-    'Complete platform for Spanish language learning. Online courses, live classes, certificates, and AI-powered conversation practice.',
-  keywords: ['spanish', 'language school', 'online courses', 'DELE', 'español'],
-  authors: [{ name: 'EspañolPro' }],
-  openGraph: {
-    type: 'website',
-    locale: 'es_ES',
-    siteName: 'EspañolPro',
-  },
+  title: { default: 'EspañolPro', template: '%s · EspañolPro' },
+  description: 'Plataforma completa para aprender español. Cursos en vivo, materiales, certificados y práctica con IA.',
   manifest: '/manifest.json',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.variable} ${sora.variable}`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
+    <html lang="es" className="dark" suppressHydrationWarning>
+      <body className={`${jakarta.variable} ${mono.variable} font-sans`}>
+        {children}
       </body>
     </html>
   )

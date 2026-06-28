@@ -2,149 +2,233 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { auth, api } from '@/lib/api'
+import { api, auth } from '@/lib/api'
 
-interface DashboardData {
-  enrollments: any[]
-  upcomingSessions: any[]
-  pendingHomework: any[]
-  totalPoints: number
-  attendancePercent: number
+function Dot({ color }: { color: string }) {
+  return <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse-dot" style={{ background: color }} />
+}
+
+function KpiCard({ label, value, sub, accent, delay = 0 }: {
+  label: string; value: string | number; sub?: string; accent?: string; delay?: number
+}) {
+  return (
+    <div className="bezel animate-fade-up" style={{ animationDelay: `${delay}ms` }}>
+      <div className="bezel-inner p-4">
+        <p className="text-[9px] font-semibold uppercase tracking-[0.16em] mb-3"
+          style={{ color: 'rgb(var(--ink2))' }}>{label}</p>
+        <p className="font-mono text-2xl font-medium leading-none"
+          style={{ color: accent ?? 'rgb(var(--ink))' }}>{value ?? '—'}</p>
+        {sub && <p className="text-[11px] mt-1.5" style={{ color: 'rgb(var(--ink2))' }}>{sub}</p>}
+      </div>
+    </div>
+  )
 }
 
 export default function StudentDashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null)
+  const [data, setData] = useState<any>(null)
   const user = auth.getUser()
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
 
   useEffect(() => {
-    api.get<DashboardData>('/students/me/dashboard')
-      .then(setData)
-      .catch(() => setData({
-        enrollments: [],
-        upcomingSessions: [],
-        pendingHomework: [],
-        totalPoints: 0,
-        attendancePercent: 0,
-      }))
+    api.get('/students/dashboard').then(setData).catch(() => setData({}))
   }, [])
 
-  const firstName = user?.fullName?.split(' ')[0] ?? 'Estudiante'
-
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-medium text-foreground">Bienvenido, {firstName}</h1>
-        <p className="text-sm text-muted-foreground mt-1">Tu panel de aprendizaje</p>
+    <div className="p-6 max-w-[1100px] mx-auto relative z-10">
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-8 animate-fade-up">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] mb-1"
+            style={{ color: 'rgb(var(--ink2))' }}>{greeting}</p>
+          <h1 className="text-2xl font-semibold tracking-tight" style={{ color: 'rgb(var(--ink))' }}>
+            {user?.fullName ?? 'Estudiante'}
+          </h1>
+        </div>
+        <Link href="/student/courses" className="btn-primary">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Explorar cursos
+        </Link>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'Cursos activos', value: data?.enrollments?.length ?? '—', sub: 'cursos inscritos' },
-          { label: 'Asistencia', value: data ? `${data.attendancePercent}%` : '—', sub: 'este mes' },
-          { label: 'Tareas pendientes', value: data?.pendingHomework?.length ?? '—', sub: 'por entregar' },
-          { label: 'Puntos', value: data?.totalPoints?.toLocaleString() ?? '—', sub: 'acumulados' },
-        ].map(kpi => (
-          <div key={kpi.label} className="bg-secondary rounded-lg p-4">
-            <p className="text-xs text-muted-foreground mb-1">{kpi.label}</p>
-            <p className="text-2xl font-medium font-heading text-foreground">{kpi.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{kpi.sub}</p>
-          </div>
-        ))}
+      {/* KPI strip */}
+      <div className="grid grid-cols-4 gap-3 mb-3">
+        <KpiCard label="Cursos activos"    value={data?.activeCourses ?? '—'}  sub="inscripciones" delay={40} />
+        <KpiCard label="Asistencia"        value={data?.attendanceRate != null ? `${data.attendanceRate}%` : '—'} sub="este mes" delay={60} accent="rgb(var(--ok))" />
+        <KpiCard label="Tareas pendientes" value={data?.pendingHomework ?? '—'} sub="por entregar"  delay={80} accent={data?.pendingHomework > 0 ? 'rgb(var(--gold))' : undefined} />
+        <KpiCard label="Puntos"            value={data?.points ?? '—'}          sub="gamificación"  delay={100} accent="rgb(var(--blue))" />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-4">
-        {/* Cursos */}
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-sm font-medium text-foreground">Mis cursos</h2>
-            <Link href="/courses" className="text-xs text-primary hover:underline">Ver catálogo →</Link>
+      {/* Main two-column grid */}
+      <div className="grid grid-cols-5 gap-3 mb-3">
+
+        {/* Mis cursos */}
+        <div className="col-span-3 bezel animate-fade-up" style={{ animationDelay: '120ms' }}>
+          <div className="bezel-inner">
+            <div className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <p className="text-[12px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>Mis cursos</p>
+              <Link href="/student/courses" className="text-[10px] transition-opacity hover:opacity-70"
+                style={{ color: 'rgb(var(--blue))' }}>Ver todos →</Link>
+            </div>
+
+            {!data ? (
+              <div className="p-4 space-y-3">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-14 rounded-lg animate-pulse" style={{ background: 'rgb(var(--s2))' }} />
+                ))}
+              </div>
+            ) : !data.enrollments?.length ? (
+              <div className="px-4 py-10 text-center">
+                <p className="text-[13px] font-medium mb-1" style={{ color: 'rgb(var(--ink))' }}>Sin cursos aún</p>
+                <p className="text-[12px] mb-4" style={{ color: 'rgb(var(--ink2))' }}>Inscríbete para comenzar</p>
+                <Link href="/student/courses" className="btn-primary text-[11px]">Explorar cursos</Link>
+              </div>
+            ) : (
+              <div>
+                {data.enrollments.slice(0, 4).map((e: any) => (
+                  <div key={e.id} className="flex items-center gap-3 px-4 py-3 transition-colors cursor-pointer"
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                    onMouseEnter={el => (el.currentTarget.style.background = 'rgb(var(--s2))')}
+                    onMouseLeave={el => (el.currentTarget.style.background = 'transparent')}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                      style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}>
+                      {e.course?.level ?? 'A'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12.5px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>
+                        {e.course?.title}
+                      </p>
+                      <p className="text-[10px] truncate" style={{ color: 'rgb(var(--ink2))' }}>
+                        {e.course?.teacher?.user?.fullName ?? 'Profesor'} · {e.course?.modality}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Dot color={e.status === 'active' ? 'rgb(var(--ok))' : 'rgb(var(--ink3))'} />
+                      <span className="text-[10px]" style={{ color: 'rgb(var(--ink2))' }}>
+                        {e.status === 'active' ? 'Activo' : e.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {data?.enrollments?.length === 0 || !data ? (
-            <div className="text-center py-6">
-              <p className="text-sm text-muted-foreground mb-3">Aún no estás inscrito en ningún curso.</p>
-              <Link href="/courses"
-                className="inline-block bg-primary text-primary-foreground px-4 py-2 rounded-md text-xs hover:opacity-90 transition-opacity">
-                Ver cursos disponibles
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {data.enrollments.map((e: any) => (
-                <div key={e.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary transition-colors">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xs font-medium font-heading flex-shrink-0">
-                    {e.course?.level}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{e.course?.title}</p>
-                    <p className="text-xs text-muted-foreground">{e.course?.teacher?.user?.fullName}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Próximas clases */}
-        <div className="bg-card border border-border rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-heading text-sm font-medium text-foreground">Próximas clases</h2>
-            <Link href="/student/calendar" className="text-xs text-primary hover:underline">Ver todas →</Link>
-          </div>
-          {!data?.upcomingSessions?.length ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Sin clases próximas.</p>
-          ) : (
-            <div className="space-y-3">
-              {data.upcomingSessions.slice(0, 3).map((s: any) => (
-                <div key={s.id} className="flex items-center gap-3">
-                  <div className="text-xs font-medium text-primary bg-primary/10 rounded-md px-2 py-1 whitespace-nowrap flex-shrink-0">
-                    {new Date(s.scheduledAt).toLocaleDateString('es', { weekday: 'short', day: 'numeric' })}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground truncate">{s.title ?? s.course?.title}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(s.scheduledAt).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                  {s.zoomLink && (
-                    <a href={s.zoomLink} target="_blank" rel="noopener noreferrer"
-                      className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded-md hover:opacity-90 flex-shrink-0">
-                      Entrar
-                    </a>
-                  )}
-                </div>
-              ))}
+        <div className="col-span-2 bezel animate-fade-up" style={{ animationDelay: '140ms' }}>
+          <div className="bezel-inner">
+            <div className="flex items-center justify-between px-4 py-3"
+              style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <p className="text-[12px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>Próximas clases</p>
+              <Link href="/student/calendar" className="text-[10px] transition-opacity hover:opacity-70"
+                style={{ color: 'rgb(var(--blue))' }}>Calendario →</Link>
             </div>
-          )}
+
+            {!data ? (
+              <div className="p-4 space-y-2">
+                {[1,2,3].map(i => (
+                  <div key={i} className="h-10 rounded animate-pulse" style={{ background: 'rgb(var(--s2))' }} />
+                ))}
+              </div>
+            ) : !data.upcomingSessions?.length ? (
+              <p className="px-4 py-8 text-[12px] text-center" style={{ color: 'rgb(var(--ink2))' }}>
+                No hay clases próximas
+              </p>
+            ) : (
+              <div className="p-2 space-y-1">
+                {data.upcomingSessions.slice(0, 5).map((s: any) => {
+                  const dt = new Date(s.scheduledAt)
+                  return (
+                    <div key={s.id} className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors"
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgb(var(--s2))')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="flex-shrink-0 text-center w-8">
+                        <p className="font-mono text-[16px] font-medium leading-none" style={{ color: 'rgb(var(--blue))' }}>
+                          {dt.getDate()}
+                        </p>
+                        <p className="text-[8px] uppercase" style={{ color: 'rgb(var(--ink2))' }}>
+                          {dt.toLocaleDateString('es-MX', { month: 'short' })}
+                        </p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11.5px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>
+                          {s.course?.title}
+                        </p>
+                        <p className="text-[10px]" style={{ color: 'rgb(var(--ink2))' }}>
+                          {dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      {s.zoomLink && (
+                        <a href={s.zoomLink} target="_blank" rel="noopener noreferrer"
+                          className="text-[9px] px-2 py-1 rounded-full"
+                          style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}>
+                          Zoom
+                        </a>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Tareas pendientes */}
-      <div className="bg-card border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading text-sm font-medium text-foreground">Tareas pendientes</h2>
-          <Link href="/student/homework" className="text-xs text-primary hover:underline">Ver todas →</Link>
-        </div>
-        {!data?.pendingHomework?.length ? (
-          <p className="text-sm text-muted-foreground">¡Al día con todas las tareas! 🎉</p>
-        ) : (
-          <div className="divide-y divide-border">
-            {data.pendingHomework.map((hw: any) => {
-              const due = new Date(hw.dueAt)
-              const isUrgent = due.getTime() - Date.now() < 24 * 60 * 60 * 1000
-              return (
-                <div key={hw.id} className="flex items-center gap-3 py-3">
-                  <div className="w-4 h-4 rounded border border-border flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm text-foreground">{hw.title}</p>
-                    <p className={`text-xs mt-0.5 ${isUrgent ? 'text-destructive' : 'text-muted-foreground'}`}>
-                      Vence {due.toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'short' })}
-                      {isUrgent && ' — ¡Urgente!'}
+      <div className="bezel animate-fade-up" style={{ animationDelay: '180ms' }}>
+        <div className="bezel-inner">
+          <div className="flex items-center justify-between px-4 py-3"
+            style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <p className="text-[12px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>Tareas pendientes</p>
+            <Link href="/student/homework" className="text-[10px] transition-opacity hover:opacity-70"
+              style={{ color: 'rgb(var(--blue))' }}>Ver todas →</Link>
+          </div>
+
+          {!data ? (
+            <div className="p-4 flex gap-3">
+              {[1,2,3].map(i => (
+                <div key={i} className="flex-1 h-16 rounded-lg animate-pulse" style={{ background: 'rgb(var(--s2))' }} />
+              ))}
+            </div>
+          ) : !data.pendingHomeworkList?.length ? (
+            <p className="px-4 py-6 text-[12px] text-center" style={{ color: 'rgb(var(--ink2))' }}>
+              Sin tareas pendientes — ¡al día!
+            </p>
+          ) : (
+            <div className="p-3 grid grid-cols-3 gap-2">
+              {data.pendingHomeworkList.slice(0, 6).map((hw: any) => {
+                const due = new Date(hw.dueAt)
+                const urgent = due.getTime() - Date.now() < 48 * 3600 * 1000
+                return (
+                  <div key={hw.id} className="p-3 rounded-lg"
+                    style={{
+                      background: urgent ? 'rgba(248,113,113,0.06)' : 'rgb(var(--s2))',
+                      border: `1px solid ${urgent ? 'rgba(248,113,113,0.18)' : 'rgba(255,255,255,0.04)'}`,
+                    }}>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Dot color={urgent ? 'rgb(var(--err))' : 'rgb(var(--gold))'} />
+                      <span className="text-[9px] font-semibold uppercase tracking-widest"
+                        style={{ color: urgent ? 'rgb(var(--err))' : 'rgb(var(--gold))' }}>
+                        {urgent ? 'Urgente' : 'Pendiente'}
+                      </span>
+                    </div>
+                    <p className="text-[12px] font-medium mb-1 leading-tight" style={{ color: 'rgb(var(--ink))' }}>
+                      {hw.title}
+                    </p>
+                    <p className="text-[10px]" style={{ color: 'rgb(var(--ink2))' }}>
+                      Entrega: {due.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                     </p>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
