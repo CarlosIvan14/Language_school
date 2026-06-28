@@ -112,16 +112,41 @@ npm run dev
 - Validación: `class-validator` con `whitelist: true` + `forbidNonWhitelisted: true`
 - Roles: `RolesGuard` + `@Roles()` decorator en todos los endpoints privilegiados
 
+## Módulos implementados
+
+| Módulo | API | Frontend |
+|---|---|---|
+| Auth (registro, login, JWT refresh) | ✅ | ✅ |
+| Catálogo de cursos + inscripción | ✅ | ✅ |
+| Dashboard estudiante | ✅ | ✅ |
+| Dashboard profesor | ✅ | ✅ |
+| Dashboard admin | ✅ | ✅ |
+| Materiales (upload Multer) | ✅ | ✅ |
+| Tareas + entregas + calificación | ✅ | ✅ |
+| Exámenes con auto-calificación | ✅ | ✅ |
+| Asistencia por sesión | ✅ | ✅ |
+| Calificaciones | ✅ | ✅ |
+| Certificados QR + verificación pública | ✅ | ✅ |
+| Pagos Stripe + webhooks | ✅ | ✅ |
+| Chat en tiempo real (WebSocket) | ✅ | ✅ |
+| Notificaciones + email Resend | ✅ | ✅ |
+| CRM prospectos + embudo | ✅ | ✅ |
+| Gamificación (puntos, badges, ranking) | ✅ | ✅ |
+| Modo oscuro | — | ✅ |
+| PWA manifest | — | ✅ |
+| Multi-idioma (ES/EN/UK) | 📋 | 📋 |
+| IA chatbot | 📋 | 📋 |
+
 ## Development Phases
 
 | Phase | Features | Status |
 |---|---|---|
 | 1 — Foundation | Monorepo, Prisma schema, Docker, CI/CD, Auth API | ✅ Completo |
-| 2 — Portales | Registro, dashboards, catálogo de cursos | 🔄 En progreso |
-| 3 — Académico | Materiales, tareas, exámenes, calificaciones, certificados | 📋 Planeado |
-| 4 — Pagos y Chat | Stripe, chat en tiempo real, notificaciones | 📋 Planeado |
-| 5 — IA y Gamificación | Chatbot OpenAI, práctica de conversación, badges | 📋 Planeado |
-| 6 — Deploy | PWA, tests E2E, Vercel + Railway | 📋 Planeado |
+| 2 — Portales | Registro multistep, dashboards, catálogo de cursos | ✅ Completo |
+| 3 — Académico | Materiales, tareas, pagos Stripe, certificados QR | ✅ Completo |
+| 4 — Chat y CRM | WebSocket chat, exámenes, asistencia, gamificación, CRM | ✅ Completo |
+| 5 — Admin & UX | Notificaciones Resend, dark mode, todas las páginas admin/teacher | ✅ Completo |
+| 6 — AI y deploy | OpenAI chatbot, multi-idioma next-intl, tests E2E, Vercel+Railway | 📋 Planeado |
 
 ## License
 
