@@ -1,6 +1,7 @@
 // FILE: apps/web/src/app/(admin)/admin/layout.tsx
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { auth } from '@/lib/api'
@@ -20,8 +21,9 @@ const nav = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const user = auth.getUser()
-  const initials = (user?.fullName ?? 'A').split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+  const [user, setUser] = useState<{ fullName: string; email?: string; role?: string } | null>(null)
+  useEffect(() => { setUser(auth.getUser()) }, [])
+  const initials = (user?.fullName ?? '').split(' ').filter(Boolean).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'A'
 
   async function handleLogout() {
     try { await auth.logout() } catch {}
