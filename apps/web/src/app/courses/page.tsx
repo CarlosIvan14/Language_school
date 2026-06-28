@@ -1,143 +1,307 @@
+// FILE: apps/web/src/app/courses/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { Globe, User, GraduationCap, Building2, ArrowRight } from 'lucide-react'
+
+interface Course {
+  id: string
+  title: string
+  description: string
+  level: string
+  modality: string
+  capacity: number
+  priceCents: number
+  status: string
+  teacher?: { user?: { fullName: string } }
+  _count?: { enrollments: number }
+}
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
-const MODALITIES = ['online', 'in_person', 'hybrid'] as const
-const MODALITY_LABELS = { online: 'Online', in_person: 'Presencial', hybrid: 'Híbrido' }
+const MODALITIES = [
+  { value: 'online', label: 'Online' },
+  { value: 'in_person', label: 'Presencial' },
+  { value: 'hybrid', label: 'Híbrido' },
+]
 
-const LEVEL_COLORS: Record<string, string> = {
-  A1: 'bg-blue-500', A2: 'bg-blue-600',
-  B1: 'bg-brand-500', B2: 'bg-amber-500',
-  C1: 'bg-orange-500', C2: 'bg-red-500',
+const LEVEL_STYLES: Record<string, { bg: string; color: string }> = {
+  A1: { bg: 'rgba(45,58,92,0.5)', color: 'rgb(var(--ink2))' },
+  A2: { bg: 'rgba(79,142,247,0.15)', color: 'rgb(var(--blue))' },
+  B1: { bg: 'rgba(245,166,35,0.15)', color: 'rgb(var(--gold))' },
+  B2: { bg: 'rgba(251,146,60,0.15)', color: 'rgb(251,146,60)' },
+  C1: { bg: 'rgba(52,211,153,0.15)', color: 'rgb(var(--ok))' },
+  C2: { bg: 'rgba(248,113,113,0.15)', color: 'rgb(var(--err))' },
+}
+
+function LevelBadge({ level }: { level: string }) {
+  const s = LEVEL_STYLES[level] ?? { bg: 'rgba(255,255,255,0.06)', color: 'rgb(var(--ink2))' }
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"
+      style={{ background: s.bg, color: s.color }}
+    >
+      {level}
+    </span>
+  )
+}
+
+function ModalityBadge({ modality }: { modality: string }) {
+  const map: Record<string, { label: string; icon: React.ReactNode }> = {
+    online: { label: 'Online', icon: <Globe size={11} /> },
+    in_person: { label: 'Presencial', icon: <Building2 size={11} /> },
+    hybrid: { label: 'Híbrido', icon: <Globe size={11} /> },
+  }
+  const m = map[modality] ?? { label: modality, icon: null }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgb(var(--ink2))' }}>
+      {m.icon}{m.label}
+    </span>
+  )
 }
 
 export default function CoursesPage() {
-  const [courses, setCourses] = useState<any[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
-  const [levelFilter, setLevelFilter] = useState<string>('')
-  const [modalityFilter, setModalityFilter] = useState<string>('')
-  const [search, setSearch] = useState('')
+  const [levelFilter, setLevelFilter] = useState('')
+  const [modalityFilter, setModalityFilter] = useState('')
 
   useEffect(() => {
     const params = new URLSearchParams()
     if (levelFilter) params.set('level', levelFilter)
     if (modalityFilter) params.set('modality', modalityFilter)
-    api.get<any[]>(`/courses?${params}`)
+    setLoading(true)
+    api.get<Course[]>(`/courses?${params}`)
       .then(setCourses)
       .catch(() => setCourses([]))
       .finally(() => setLoading(false))
   }, [levelFilter, modalityFilter])
 
-  const filtered = courses.filter(c =>
-    !search || c.title.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = courses
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <nav className="border-b border-border bg-card px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-primary-foreground text-xs font-medium">E</div>
-          <span className="font-heading font-medium text-sm text-foreground">EspañolPro</span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">Iniciar sesión</Link>
-          <Link href="/register" className="text-sm bg-primary text-primary-foreground px-4 py-2 rounded-md hover:opacity-90 transition-opacity">Registrarse</Link>
+    <div className="min-h-screen" style={{ background: 'rgb(5,7,14)' }}>
+      {/* Ambient orb */}
+      <div className="fixed pointer-events-none" style={{ top: 0, left: '30%', width: 800, height: 500, background: 'radial-gradient(ellipse, rgba(79,142,247,0.06) 0%, transparent 65%)', transform: 'translateX(-50%)' }} />
+
+      {/* Nav */}
+      <nav className="sticky top-0 z-50 flex justify-center px-4 pt-5 pb-3">
+        <div
+          className="flex items-center gap-6 px-5 py-2.5 rounded-2xl"
+          style={{
+            background: 'rgba(9,13,24,0.85)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(16px)',
+          }}
+        >
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-bold text-white" style={{ background: 'rgb(var(--blue))' }}>E</div>
+            <span className="text-[14px] font-semibold tracking-tight" style={{ color: 'rgb(var(--ink))' }}>EspañolPro</span>
+          </Link>
+          <div className="hidden md:flex items-center gap-4">
+            <Link href="/courses" className="text-[13px] transition-opacity hover:opacity-70" style={{ color: 'rgb(var(--blue))' }}>Cursos</Link>
+            <Link href="/#features" className="text-[13px] transition-opacity hover:opacity-70" style={{ color: 'rgb(var(--ink2))' }}>Características</Link>
+            <Link href="/#pricing" className="text-[13px] transition-opacity hover:opacity-70" style={{ color: 'rgb(var(--ink2))' }}>Precios</Link>
+          </div>
+          <div className="flex items-center gap-2 ml-2">
+            <Link href="/login" className="btn-ghost text-[12px] px-3 py-1.5">Iniciar sesión</Link>
+            <Link href="/register" className="btn-primary text-[12px] px-3 py-1.5">Registrarse</Link>
+          </div>
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
-        <h1 className="font-heading text-3xl font-medium text-foreground mb-2">Catálogo de cursos</h1>
-        <p className="text-muted-foreground mb-8">Encuentra el curso de español perfecto para tu nivel y horario.</p>
+      {/* Hero */}
+      <div className="text-center px-4 pt-14 pb-10 relative z-10">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-4 text-[11px] font-semibold uppercase tracking-widest" style={{ background: 'rgba(79,142,247,0.1)', color: 'rgb(var(--blue))' }}>
+          <GraduationCap size={12} />
+          Catálogo completo
+        </div>
+        <h1 className="text-[34px] font-semibold tracking-tight mb-3" style={{ color: 'rgb(var(--ink))' }}>
+          Cursos disponibles
+        </h1>
+        <p className="text-[15px] max-w-xl mx-auto" style={{ color: 'rgb(var(--ink2))' }}>
+          Encuentra el nivel perfecto y empieza a aprender español con profesores certificados.
+        </p>
+      </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-8">
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => setLevelFilter('')}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${!levelFilter ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-border/80'}`}>
+      {/* Filter bar */}
+      <div className="max-w-6xl mx-auto px-6 mb-8 relative z-10">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Level pills */}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setLevelFilter('')}
+              className="px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
+              style={{
+                background: !levelFilter ? 'rgba(79,142,247,0.15)' : 'rgba(255,255,255,0.04)',
+                color: !levelFilter ? 'rgb(var(--blue))' : 'rgb(var(--ink2))',
+                border: !levelFilter ? '1px solid rgba(79,142,247,0.3)' : '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
               Todos
             </button>
             {LEVELS.map(l => (
-              <button key={l} onClick={() => setLevelFilter(levelFilter === l ? '' : l)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${levelFilter === l ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-muted-foreground hover:border-border/80'}`}>
+              <button
+                key={l}
+                onClick={() => setLevelFilter(levelFilter === l ? '' : l)}
+                className="px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
+                style={{
+                  background: levelFilter === l ? 'rgba(79,142,247,0.15)' : 'rgba(255,255,255,0.04)',
+                  color: levelFilter === l ? 'rgb(var(--blue))' : 'rgb(var(--ink2))',
+                  border: levelFilter === l ? '1px solid rgba(79,142,247,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
                 {l}
               </button>
             ))}
           </div>
-          <div className="flex gap-2 ml-auto">
-            <select value={modalityFilter} onChange={e => setModalityFilter(e.target.value)}
-              className="text-xs border border-input rounded-md px-2 py-1.5 bg-background text-foreground">
-              <option value="">Modalidad</option>
-              {MODALITIES.map(m => <option key={m} value={m}>{MODALITY_LABELS[m]}</option>)}
-            </select>
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar..."
-              className="text-xs border border-input rounded-md px-3 py-1.5 bg-background text-foreground w-36 focus:outline-none focus:ring-2 focus:ring-ring" />
+
+          <div className="h-4 w-px mx-1" style={{ background: 'rgba(255,255,255,0.08)' }} />
+
+          {/* Modality pills */}
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setModalityFilter('')}
+              className="px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
+              style={{
+                background: !modalityFilter ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                color: !modalityFilter ? 'rgb(var(--ink))' : 'rgb(var(--ink2))',
+                border: !modalityFilter ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
+              Todos
+            </button>
+            {MODALITIES.map(m => (
+              <button
+                key={m.value}
+                onClick={() => setModalityFilter(modalityFilter === m.value ? '' : m.value)}
+                className="px-3 py-1.5 rounded-full text-[12px] font-medium transition-all"
+                style={{
+                  background: modalityFilter === m.value ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)',
+                  color: modalityFilter === m.value ? 'rgb(var(--ink))' : 'rgb(var(--ink2))',
+                  border: modalityFilter === m.value ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.06)',
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="ml-auto text-[12px]" style={{ color: 'rgb(var(--ink3))' }}>
+            {!loading && `${filtered.length} curso${filtered.length !== 1 ? 's' : ''}`}
           </div>
         </div>
+      </div>
 
-        {/* Grid */}
+      {/* Grid */}
+      <div className="max-w-6xl mx-auto px-6 pb-16 relative z-10">
         {loading ? (
           <div className="grid md:grid-cols-3 gap-4">
-            {[1,2,3].map(i => <div key={i} className="h-56 bg-secondary rounded-xl animate-pulse" />)}
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bezel">
+                <div className="bezel-inner p-5 space-y-3">
+                  <div className="h-5 w-16 rounded animate-pulse" style={{ background: 'rgb(var(--s2))' }} />
+                  <div className="h-5 w-full rounded animate-pulse" style={{ background: 'rgb(var(--s2))' }} />
+                  <div className="h-3 w-3/4 rounded animate-pulse" style={{ background: 'rgb(var(--s2))' }} />
+                  <div className="h-3 w-1/2 rounded animate-pulse" style={{ background: 'rgb(var(--s2))' }} />
+                  <div className="h-8 w-full rounded-lg animate-pulse mt-4" style={{ background: 'rgb(var(--s2))' }} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground">No se encontraron cursos con esos filtros.</p>
+          <div className="bezel max-w-md mx-auto">
+            <div className="bezel-inner p-12 text-center">
+              <GraduationCap size={32} className="mx-auto mb-3" style={{ color: 'rgb(var(--ink3))' }} />
+              <p className="text-[14px] font-medium mb-1" style={{ color: 'rgb(var(--ink))' }}>Sin cursos disponibles</p>
+              <p className="text-[12px]" style={{ color: 'rgb(var(--ink2))' }}>Prueba con otros filtros o vuelve más tarde.</p>
+            </div>
           </div>
         ) : (
           <div className="grid md:grid-cols-3 gap-4">
-            {filtered.map(course => {
+            {filtered.map((course, idx) => {
               const enrolled = course._count?.enrollments ?? 0
               const isFull = enrolled >= course.capacity
-              const pct = Math.round((enrolled / course.capacity) * 100)
-
               return (
-                <div key={course.id} className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-sm transition-shadow">
-                  <div className={`${LEVEL_COLORS[course.level] ?? 'bg-primary'} h-16 flex items-center justify-between px-4`}>
-                    <span className="text-white text-xl font-heading font-medium opacity-90">{course.level}</span>
-                    <span className="text-xs text-white/80 bg-white/20 rounded-full px-2 py-0.5">
-                      {MODALITY_LABELS[course.modality as keyof typeof MODALITY_LABELS]}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-medium text-sm text-foreground mb-1">{course.title}</h3>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Prof. {course.teacher?.user?.fullName ?? 'Por confirmar'}
-                    </p>
-
-                    <div className="flex gap-3 text-xs text-muted-foreground mb-3">
-                      <span>📅 {new Date(course.startsAt).toLocaleDateString('es', { day: 'numeric', month: 'short' })}</span>
-                      <span>⏱ {course.durationWeeks} semanas</span>
-                    </div>
-
-                    <div className="mb-1">
-                      <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full transition-all ${isFull ? 'bg-destructive' : 'bg-primary'}`}
-                          style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                    <p className={`text-[10px] mb-3 ${isFull ? 'text-destructive' : 'text-muted-foreground'}`}>
-                      {isFull ? 'Curso lleno' : `${enrolled}/${course.capacity} inscritos`}
-                    </p>
-
+                <div
+                  key={course.id}
+                  className="bezel animate-fade-up"
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                >
+                  <div className="bezel-inner p-5 flex flex-col gap-3 h-full">
+                    {/* Top row: level + modality */}
                     <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-base font-medium font-heading text-foreground">
-                          ${(course.priceCents / 100).toFixed(0)}
+                      <LevelBadge level={course.level} />
+                      <ModalityBadge modality={course.modality} />
+                    </div>
+
+                    {/* Title */}
+                    <div>
+                      <h3 className="text-[15px] font-semibold leading-snug mb-1" style={{ color: 'rgb(var(--ink))' }}>
+                        {course.title}
+                      </h3>
+                      {course.description && (
+                        <p
+                          className="text-[12px] leading-relaxed"
+                          style={{
+                            color: 'rgb(var(--ink2))',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          {course.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Teacher */}
+                    <div className="flex items-center gap-1.5">
+                      <User size={12} style={{ color: 'rgb(var(--ink3))' }} />
+                      <span className="text-[12px]" style={{ color: 'rgb(var(--ink2))' }}>
+                        {course.teacher?.user?.fullName ?? 'Por confirmar'}
+                      </span>
+                    </div>
+
+                    {/* Capacity bar */}
+                    <div>
+                      <div className="flex justify-between text-[11px] mb-1">
+                        <span style={{ color: 'rgb(var(--ink3))' }}>Cupo</span>
+                        <span style={{ color: isFull ? 'rgb(var(--err))' : 'rgb(var(--ink2))' }}>
+                          {isFull ? 'Lleno' : `${enrolled}/${course.capacity}`}
                         </span>
-                        <span className="text-xs text-muted-foreground"> /mes</span>
                       </div>
-                      <Link href={`/courses/${course.id}`}
-                        className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
-                          isFull
-                            ? 'border border-border text-muted-foreground hover:bg-secondary'
-                            : 'bg-primary text-primary-foreground hover:opacity-90'
-                        }`}>
-                        {isFull ? 'Lista de espera' : 'Ver curso'}
+                      <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(100, (enrolled / course.capacity) * 100)}%`,
+                            background: isFull ? 'rgb(var(--err))' : 'rgb(var(--blue))',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1" />
+
+                    {/* Price + CTA */}
+                    <div
+                      className="flex items-center justify-between pt-3 mt-1"
+                      style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
+                    >
+                      <div>
+                        <span className="font-mono text-[17px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>
+                          ${(course.priceCents / 100).toFixed(2)}
+                        </span>
+                        <span className="text-[11px] ml-1" style={{ color: 'rgb(var(--ink3))' }}>MXN/mes</span>
+                      </div>
+                      <Link
+                        href="/register"
+                        className="btn-primary text-[12px] px-3 py-1.5 flex items-center gap-1.5"
+                      >
+                        Inscribirse <ArrowRight size={12} />
                       </Link>
                     </div>
                   </div>
