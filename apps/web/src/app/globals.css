@@ -24,8 +24,6 @@
 }
 
 @layer base {
-  html { @apply dark }
-
   body {
     background-color: rgb(var(--bg));
     color: rgb(var(--ink));

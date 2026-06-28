@@ -6,7 +6,36 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+let _refreshing: Promise<string | null> | null = null
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (_refreshing) return _refreshing
+  _refreshing = (async () => {
+    try {
+      const rt = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null
+      if (!rt) return null
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      })
+      if (!res.ok) {
+        auth.clearTokens()
+        return null
+      }
+      const data = await res.json()
+      auth.saveTokens(data)
+      return data.accessToken as string
+    } catch {
+      return null
+    } finally {
+      _refreshing = null
+    }
+  })()
+  return _refreshing
+}
+
+async function request<T>(path: string, options: RequestInit = {}, _retry = true): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
 
   const res = await fetch(`${API_URL}${path}`, {
@@ -17,6 +46,24 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       ...options.headers,
     },
   })
+
+  // Auto-refresh on 401 then retry once
+  if (res.status === 401 && _retry) {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      return request<T>(path, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${newToken}`,
+          ...options.headers,
+        },
+      }, false)
+    }
+    // Refresh failed — redirect to login
+    if (typeof window !== 'undefined') window.location.href = '/login'
+    throw new ApiError(401, 'Session expired')
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
@@ -35,7 +82,6 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 }
 
-// Auth helpers
 export interface AuthResponse {
   accessToken: string
   refreshToken: string
@@ -44,14 +90,9 @@ export interface AuthResponse {
 
 export const auth = {
   register: (data: {
-    fullName: string
-    email: string
-    password: string
-    spanishLevel?: string
-    nativeLanguage?: string
-    timezone?: string
-    language?: string
-    phone?: string
+    fullName: string; email: string; password: string;
+    spanishLevel?: string; nativeLanguage?: string; timezone?: string;
+    language?: string; phone?: string;
   }) => api.post<AuthResponse>('/auth/register', data),
 
   login: (email: string, password: string) =>
@@ -65,8 +106,8 @@ export const auth = {
     localStorage.setItem('access_token', res.accessToken)
     localStorage.setItem('refresh_token', res.refreshToken)
     localStorage.setItem('user', JSON.stringify(res.user))
-    // Also set cookie so middleware can read it (server-side auth check)
-    document.cookie = `access_token=${res.accessToken}; path=/; max-age=${15 * 60}; SameSite=Lax`
+    // Cookie for middleware — set for 7 days (middleware just checks presence; actual validation is in API)
+    document.cookie = `access_token=${res.accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
   },
 
   clearTokens: () => {
@@ -76,9 +117,14 @@ export const auth = {
     document.cookie = 'access_token=; path=/; max-age=0'
   },
 
-  getUser: () => {
+  getUser: (): { id: string; email: string; role: string; fullName: string } | null => {
     if (typeof window === 'undefined') return null
     const u = localStorage.getItem('user')
     return u ? JSON.parse(u) : null
+  },
+
+  isLoggedIn: () => {
+    if (typeof window === 'undefined') return false
+    return !!localStorage.getItem('access_token')
   },
 }
