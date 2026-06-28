@@ -110,4 +110,18 @@ export class AuthService {
       user: { id: user.id, email: user.email, role: user.role, fullName: user.fullName },
     }
   }
+
+  async updateProfile(userId: string, data: { fullName?: string; phone?: string; timezone?: string; language?: string; avatarUrl?: string }) {
+    const allowed: any = {}
+    if (data.fullName)  allowed.fullName  = data.fullName
+    if (data.phone)     allowed.phone     = data.phone
+    if (data.timezone)  allowed.timezone  = data.timezone
+    if (data.language)  allowed.language  = data.language
+    if (data.avatarUrl !== undefined) allowed.avatarUrl = data.avatarUrl
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: allowed,
+      select: { id: true, email: true, fullName: true, phone: true, timezone: true, language: true, avatarUrl: true, role: true },
+    })
+  }
 }
