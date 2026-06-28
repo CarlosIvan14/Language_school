@@ -2,12 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 
 const BADGES = [
-  { name: 'Primer paso', description: 'Inscribiste tu primer curso', icon: '🎯', trigger: 'first_enrollment', points: 0 },
-  { name: 'Dedicado', description: '10 clases asistidas', icon: '📚', trigger: 'attendance_10', points: 0 },
-  { name: '100 puntos', description: 'Alcanzaste 100 puntos', icon: '⭐', trigger: 'points_100', points: 100 },
-  { name: 'Examinado', description: 'Aprobaste tu primer examen', icon: '🏆', trigger: 'exam_passed', points: 0 },
-  { name: 'Certificado', description: 'Obtuviste tu primer certificado', icon: '🎓', trigger: 'first_cert', points: 0 },
+  { name: 'Primer paso', description: 'Inscribiste tu primer curso', iconUrl: '🎯', triggerRule: { event: 'first_enrollment' } },
+  { name: 'Dedicado', description: '10 clases asistidas', iconUrl: '📚', triggerRule: { event: 'attendance_10' } },
+  { name: '100 puntos', description: 'Alcanzaste 100 puntos', iconUrl: '⭐', triggerRule: { event: 'points_100' } },
+  { name: 'Examinado', description: 'Aprobaste tu primer examen', iconUrl: '🏆', triggerRule: { event: 'exam_passed' } },
+  { name: 'Certificado', description: 'Obtuviste tu primer certificado', iconUrl: '🎓', triggerRule: { event: 'first_cert' } },
 ]
+
+const TRIGGER_TO_NAME: Record<string, string> = {
+  first_enrollment: 'Primer paso',
+  attendance_10: 'Dedicado',
+  points_100: '100 puntos',
+  exam_passed: 'Examinado',
+  first_cert: 'Certificado',
+}
 
 @Injectable()
 export class GamificationService {
@@ -70,7 +78,10 @@ export class GamificationService {
   }
 
   async checkAndAwardBadges(studentId: string, trigger: string) {
-    const badge = await this.prisma.badge.findFirst({ where: { trigger } })
+    const badgeName = TRIGGER_TO_NAME[trigger]
+    if (!badgeName) return
+
+    const badge = await this.prisma.badge.findUnique({ where: { name: badgeName } })
     if (!badge) return
 
     const already = await this.prisma.studentBadge.findUnique({
@@ -79,11 +90,5 @@ export class GamificationService {
     if (already) return
 
     await this.prisma.studentBadge.create({ data: { studentId, badgeId: badge.id } })
-
-    if (badge.points > 0) {
-      await this.prisma.pointsEntry.create({
-        data: { studentId, points: badge.points, reason: `Badge: ${badge.name}` },
-      })
-    }
   }
 }

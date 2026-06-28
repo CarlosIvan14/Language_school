@@ -16,8 +16,8 @@ export class ExamsController {
   }
 
   @Post('courses/:courseId/exams')
-  create(@Param('courseId') courseId: string, @Body() body: any) {
-    return this.examsService.create({ ...body, courseId })
+  create(@Param('courseId') courseId: string, @Body() body: any, @Req() req: any) {
+    return this.examsService.create({ ...body, courseId }, req.user.id)
   }
 
   @Post('exams/:id/attempt')

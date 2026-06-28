@@ -20,15 +20,15 @@ export class MaterialsService {
     })
   }
 
-  async create(data: { courseId: string; title: string; type: string; fileUrl?: string; description?: string }, uploadedBy: string) {
+  async create(data: { courseId: string; title: string; type: string; storagePath?: string; description?: string }, uploadedById: string) {
     return this.prisma.material.create({
       data: {
         courseId: data.courseId,
         title: data.title,
         type: data.type as any,
-        fileUrl: data.fileUrl,
+        storagePath: data.storagePath ?? '',
         description: data.description,
-        uploadedBy,
+        uploadedById,
       },
     })
   }
@@ -36,7 +36,7 @@ export class MaterialsService {
   async remove(id: string, userId: string, role: UserRole) {
     const material = await this.prisma.material.findUnique({ where: { id } })
     if (!material) throw new NotFoundException('Material not found')
-    if (role !== 'admin' && material.uploadedBy !== userId) throw new ForbiddenException()
+    if (role !== 'admin' && material.uploadedById !== userId) throw new ForbiddenException()
     return this.prisma.material.delete({ where: { id } })
   }
 }

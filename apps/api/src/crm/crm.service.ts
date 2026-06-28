@@ -5,11 +5,11 @@ import { PrismaService } from '../prisma/prisma.service'
 export class CrmService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(stage?: string, assignedTo?: string) {
+  async findAll(stage?: string, assignedToId?: string) {
     return this.prisma.prospect.findMany({
       where: {
         ...(stage ? { stage: stage as any } : {}),
-        ...(assignedTo ? { assignedTo } : {}),
+        ...(assignedToId ? { assignedToId } : {}),
       },
       include: {
         _count: { select: { activities: true } },
@@ -19,9 +19,9 @@ export class CrmService {
     })
   }
 
-  async create(data: { name: string; email?: string; phone?: string; source?: string; notes?: string }, assignedTo: string) {
+  async create(data: { name: string; email?: string; phone?: string; source?: string; notes?: string }, assignedToId: string) {
     return this.prisma.prospect.create({
-      data: { ...data, stage: 'lead', assignedTo },
+      data: { ...data, stage: 'lead', assignedToId } as any,
     })
   }
 
@@ -32,11 +32,11 @@ export class CrmService {
     })
   }
 
-  async addActivity(prospectId: string, data: { type: string; notes?: string }) {
+  async addActivity(prospectId: string, data: { type: string; notes?: string }, performedById: string) {
     const prospect = await this.prisma.prospect.findUnique({ where: { id: prospectId } })
     if (!prospect) throw new NotFoundException('Prospect not found')
     return this.prisma.crmActivity.create({
-      data: { prospectId, type: data.type as any, notes: data.notes },
+      data: { prospectId, type: data.type as any, notes: data.notes, performedById } as any,
     })
   }
 

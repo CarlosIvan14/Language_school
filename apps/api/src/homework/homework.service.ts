@@ -13,11 +13,13 @@ export class HomeworkService {
     })
   }
 
-  async create(data: { courseId: string; title: string; instructions?: string; dueAt: string; maxScore?: number }) {
-    return this.prisma.homework.create({ data: { ...data, dueAt: new Date(data.dueAt), maxScore: data.maxScore ?? 100 } })
+  async create(data: { courseId: string; title: string; instructions?: string; dueAt: string; maxScore?: number }, createdById: string) {
+    return this.prisma.homework.create({
+      data: { ...data, dueAt: new Date(data.dueAt), maxScore: data.maxScore ?? 100, createdById } as any,
+    })
   }
 
-  async submit(homeworkId: string, userId: string, fileUrl?: string, textContent?: string) {
+  async submit(homeworkId: string, userId: string, storagePath?: string, contentText?: string) {
     const student = await this.prisma.student.findUnique({ where: { userId } })
     if (!student) throw new ForbiddenException('Not a student')
 
@@ -31,7 +33,7 @@ export class HomeworkService {
     if (existing) throw new BadRequestException('Already submitted')
 
     const submission = await this.prisma.homeworkSubmission.create({
-      data: { homeworkId, studentId: student.id, fileUrl, textContent },
+      data: { homeworkId, studentId: student.id, storagePath, contentText },
     })
 
     await this.prisma.pointsEntry.create({

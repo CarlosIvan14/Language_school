@@ -35,13 +35,13 @@ export class HomeworkController {
   }
 
   @Post('courses/:courseId/homework')
-  create(@Param('courseId') courseId: string, @Body() body: Omit<CreateHomeworkDto, 'courseId'>) {
-    return this.homeworkService.create({ ...body, courseId })
+  create(@Param('courseId') courseId: string, @Body() body: Omit<CreateHomeworkDto, 'courseId'>, @Req() req: any) {
+    return this.homeworkService.create({ ...body, courseId }, req.user.id)
   }
 
   @Post('homework/:id/submit')
   submit(@Param('id') id: string, @Body() body: SubmitHomeworkDto, @Req() req: any) {
-    return this.homeworkService.submit(id, req.user.id, body.fileUrl, body.textContent)
+    return this.homeworkService.submit(id, req.user.id, body.fileUrl, body.textContent as any)
   }
 
   @Patch('homework/submissions/:id/grade')

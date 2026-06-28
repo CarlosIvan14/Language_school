@@ -12,8 +12,10 @@ export class ExamsService {
     })
   }
 
-  async create(data: { courseId: string; title: string; questions: object; timeLimitMin?: number; passScore?: number }) {
-    return this.prisma.exam.create({ data: { ...data, passScore: data.passScore ?? 70 } })
+  async create(data: { courseId: string; title: string; questions: object; timeLimitMin?: number; passScore?: number }, createdById: string) {
+    return this.prisma.exam.create({
+      data: { ...data, passScore: data.passScore ?? 70, createdById } as any,
+    })
   }
 
   async startAttempt(examId: string, userId: string) {
@@ -50,7 +52,8 @@ export class ExamsService {
       if (answers[q.id] === q.correctAnswer) correct++
     }
     const score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0
-    const passed = score >= (attempt.exam.passScore ?? 70)
+    const passScore = Number(attempt.exam.passScore ?? 70)
+    const passed = score >= passScore
 
     const updated = await this.prisma.examAttempt.update({
       where: { id: attemptId },
@@ -72,7 +75,7 @@ export class ExamsService {
     return this.prisma.examAttempt.findMany({
       where: { studentId: student.id },
       include: { exam: { include: { course: { select: { title: true } } } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { startedAt: 'desc' },
     })
   }
 }

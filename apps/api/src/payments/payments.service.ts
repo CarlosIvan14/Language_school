@@ -12,7 +12,7 @@ export class PaymentsService {
     private config: ConfigService,
   ) {
     this.stripe = new Stripe(this.config.get<string>('STRIPE_SECRET_KEY') ?? '', {
-      apiVersion: '2024-06-20',
+      apiVersion: '2024-04-10',
     })
   }
 
@@ -45,7 +45,7 @@ export class PaymentsService {
         currency: 'usd',
         stripeIntentId: intent.id,
         status: 'pending',
-        type: 'tuition',
+        type: 'enrollment',
       },
     })
 

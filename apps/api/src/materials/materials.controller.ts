@@ -37,7 +37,7 @@ export class MaterialsController {
     @Req() req: any,
   ) {
     return this.materialsService.create(
-      { ...body, courseId, fileUrl: file ? `/uploads/${file.filename}` : undefined },
+      { ...body, courseId, storagePath: file ? `/uploads/${file.filename}` : undefined },
       req.user.id,
     )
   }

@@ -31,7 +31,9 @@ export class CertificatesService {
         courseId,
         validationHash,
         qrUrl: `/api/v1/certificates/verify/${validationHash}`,
-      },
+        pdfPath: `/certificates/${validationHash}.pdf`,
+        level: course.level,
+      } as any,
     })
 
     await this.prisma.pointsEntry.create({

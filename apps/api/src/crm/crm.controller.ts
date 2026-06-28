@@ -28,8 +28,8 @@ export class CrmController {
   }
 
   @Post('prospects/:id/activities')
-  addActivity(@Param('id') id: string, @Body() body: { type: string; notes?: string }) {
-    return this.crmService.addActivity(id, body)
+  addActivity(@Param('id') id: string, @Body() body: { type: string; notes?: string }, @Req() req: any) {
+    return this.crmService.addActivity(id, body, req.user.id)
   }
 
   @Get('funnel')
