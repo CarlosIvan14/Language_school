@@ -1,7 +1,15 @@
+// FILE: apps/web/src/app/(teacher)/teacher/attendance/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/Icon'
+
+const STATUS = {
+  present: { label: 'P', color: 'rgb(var(--ok))', bg: 'rgba(52,211,153,0.15)', border: 'rgba(52,211,153,0.4)' },
+  absent:  { label: 'A', color: 'rgb(var(--err))', bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.4)' },
+  excused: { label: 'J', color: 'rgb(var(--gold))', bg: 'rgba(245,166,35,0.15)', border: 'rgba(245,166,35,0.4)' },
+} as const
 
 export default function TeacherAttendancePage() {
   const [sessions, setSessions] = useState<any[]>([])
@@ -18,16 +26,13 @@ export default function TeacherAttendancePage() {
   async function loadAttendance(session: any) {
     setSelectedSession(session)
     try {
-      const [attendanceList, enrollments] = await Promise.all([
+      const [attendanceList, course] = await Promise.all([
         api.get<any[]>(`/sessions/${session.id}/attendance`),
         api.get<any>(`/courses/${session.course?.id || session.courseId}`),
       ])
       const existing: Record<string, string> = {}
       attendanceList.forEach((a: any) => { existing[a.studentId] = a.status })
-
-      const courseEnrollments = enrollments?.enrollments ?? []
-      const studentList = courseEnrollments.map((e: any) => e.student)
-      setStudents(studentList)
+      setStudents((course?.enrollments ?? []).map((e: any) => e.student))
       setRecords(existing)
     } catch {}
   }
@@ -36,83 +41,90 @@ export default function TeacherAttendancePage() {
     if (!selectedSession) return
     setSaving(true)
     try {
-      const recordsArray = students.map(s => ({
-        studentId: s.id,
-        status: records[s.id] ?? 'absent',
-      }))
-      await api.post(`/sessions/${selectedSession.id}/attendance`, { records: recordsArray })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch {}
-    finally { setSaving(false) }
+      await api.post(`/sessions/${selectedSession.id}/attendance`, {
+        records: students.map(s => ({ studentId: s.id, status: records[s.id] ?? 'absent' })),
+      })
+      setSaved(true); setTimeout(() => setSaved(false), 2000)
+    } catch {} finally { setSaving(false) }
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-medium text-foreground">Asistencia</h1>
-        <p className="text-sm text-muted-foreground">Registra la asistencia de tus sesiones</p>
+    <div className="p-6 max-w-[960px] mx-auto relative z-10">
+      <div className="mb-6 animate-fade-up">
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'rgb(var(--ink))' }}>Asistencia</h1>
+        <p className="text-[13px] mt-1" style={{ color: 'rgb(var(--ink2))' }}>Registra la asistencia de tus sesiones</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="md:col-span-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Sesiones</p>
+      <div className="grid grid-cols-3 gap-3">
+        {/* Sessions list */}
+        <div className="col-span-1 animate-fade-up" style={{ animationDelay: '40ms' }}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: 'rgb(var(--ink3))' }}>Sesiones</p>
           <div className="space-y-2">
             {!sessions.length ? (
-              <p className="text-sm text-muted-foreground">Sin sesiones próximas.</p>
-            ) : (
-              sessions.map(s => (
-                <button key={s.id} onClick={() => loadAttendance(s)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${selectedSession?.id === s.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-secondary'}`}>
-                  <p className="text-xs font-medium text-foreground">{s.course?.title}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {new Date(s.scheduledAt).toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })}
-                  </p>
-                </button>
-              ))
-            )}
+              <p className="text-[12px]" style={{ color: 'rgb(var(--ink2))' }}>Sin sesiones próximas</p>
+            ) : sessions.map(s => (
+              <button key={s.id} onClick={() => loadAttendance(s)}
+                className="w-full text-left p-3 rounded-xl transition-all"
+                style={{
+                  background: selectedSession?.id === s.id ? 'rgba(79,142,247,0.08)' : 'rgb(var(--s1))',
+                  border: selectedSession?.id === s.id ? '1px solid rgba(79,142,247,0.3)' : '1px solid rgb(var(--bd))',
+                }}>
+                <p className="text-[12px] font-medium" style={{ color: 'rgb(var(--ink))' }}>{s.course?.title}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: 'rgb(var(--ink2))' }}>
+                  {new Date(s.scheduledAt).toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </p>
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="md:col-span-2">
+        {/* Roster */}
+        <div className="col-span-2 animate-fade-up" style={{ animationDelay: '80ms' }}>
           {!selectedSession ? (
-            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">Selecciona una sesión</div>
+            <div className="bezel h-full"><div className="bezel-inner h-48 flex items-center justify-center text-[13px]" style={{ color: 'rgb(var(--ink3))' }}>
+              Selecciona una sesión
+            </div></div>
           ) : (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-foreground">{selectedSession.course?.title}</p>
-                <button onClick={saveAttendance} disabled={saving}
-                  className={`text-xs px-3 py-1.5 rounded-md transition-colors ${saved ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground hover:opacity-90'} disabled:opacity-50`}>
-                  {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar'}
+            <div className="bezel"><div className="bezel-inner">
+              <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'rgba(var(--bd))' }}>
+                <p className="text-[13px] font-medium" style={{ color: 'rgb(var(--ink))' }}>{selectedSession.course?.title}</p>
+                <button onClick={saveAttendance} disabled={saving} className="btn-primary text-[12px] px-3 py-1.5 disabled:opacity-50" style={{ borderRadius: '0.5rem' }}>
+                  {saving ? 'Guardando...' : saved ? 'Guardado ✓' : 'Guardar'}
                 </button>
               </div>
-              <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-                {!students.length ? (
-                  <p className="text-sm text-muted-foreground p-4">Sin estudiantes en este curso.</p>
-                ) : (
-                  students.map(s => (
-                    <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-                      <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-muted-foreground flex-shrink-0">
+              {!students.length ? (
+                <p className="text-[13px] p-6 text-center" style={{ color: 'rgb(var(--ink2))' }}>Sin estudiantes en este curso</p>
+              ) : (
+                <div>
+                  {students.map(s => (
+                    <div key={s.id} className="flex items-center gap-3 px-4 py-2.5" style={{ borderBottom: '1px solid rgba(var(--bd-soft))' }}>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold flex-shrink-0"
+                        style={{ background: 'rgba(79,142,247,0.15)', color: 'rgb(var(--blue))' }}>
                         {s.user?.fullName?.charAt(0) ?? '?'}
                       </div>
-                      <p className="text-sm text-foreground flex-1">{s.user?.fullName}</p>
+                      <p className="text-[13px] flex-1" style={{ color: 'rgb(var(--ink))' }}>{s.user?.fullName}</p>
                       <div className="flex gap-1">
-                        {(['present', 'absent', 'excused'] as const).map(status => (
-                          <button key={status} onClick={() => setRecords(r => ({ ...r, [s.id]: status }))}
-                            className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${records[s.id] === status ? {
-                              present: 'bg-green-500 text-white border-green-500',
-                              absent: 'bg-red-500 text-white border-red-500',
-                              excused: 'bg-amber-500 text-white border-amber-500',
-                            }[status] : 'border-border text-muted-foreground hover:bg-secondary'}`}>
-                            {status === 'present' ? 'P' : status === 'absent' ? 'A' : 'J'}
-                          </button>
-                        ))}
+                        {(['present', 'absent', 'excused'] as const).map(status => {
+                          const on = records[s.id] === status
+                          const st = STATUS[status]
+                          return (
+                            <button key={status} onClick={() => setRecords(r => ({ ...r, [s.id]: status }))}
+                              className="w-7 h-7 rounded-lg text-[11px] font-bold transition-all"
+                              style={{
+                                background: on ? st.bg : 'rgb(var(--s2))',
+                                color: on ? st.color : 'rgb(var(--ink3))',
+                                border: on ? `1px solid ${st.border}` : '1px solid transparent',
+                              }}>
+                              {st.label}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
+                  ))}
+                </div>
+              )}
+            </div></div>
           )}
         </div>
       </div>
