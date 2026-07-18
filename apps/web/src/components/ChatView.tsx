@@ -63,18 +63,28 @@ export function ChatView() {
     if (!token) return
     let io: any
     import('socket.io-client').then(({ io: ioFn }) => {
-      io = ioFn(API_ORIGIN, { path: '/socket.io', auth: { token }, transports: ['websocket'] })
-      io.on('message', (msg: Message) => {
+      // Connect to the '/chat' namespace (the gateway lives there, not the default '/')
+      io = ioFn(`${API_ORIGIN}/chat`, { path: '/socket.io', auth: { token }, transports: ['websocket'] })
+      io.on('message', (msg: Message & { recipientId?: string }) => {
         const sel = selectedRef.current
-        if (sel && (msg.senderId === sel.id || msg.senderId === me?.id)) {
+        const iAmSender = msg.senderId === me?.id
+        // The other party in this message relative to me
+        const other: ChatUser = iAmSender
+          ? (sel ?? { id: (msg as any).recipientId, fullName: '' })
+          : { id: msg.senderId, fullName: msg.sender?.fullName ?? '', avatarUrl: msg.sender?.avatarUrl }
+
+        // Append to the open thread if it belongs to the selected conversation
+        if (sel && other.id === sel.id) {
           setMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg])
         }
+
+        // Update / insert the conversation in the sidebar
         setConversations(prev => {
-          const otherId = msg.senderId === me?.id ? sel?.id : msg.senderId
-          if (!otherId) return prev
-          const exists = prev.find(c => c.with.id === otherId)
-          if (exists) return prev.map(c => c.with.id === otherId ? { ...c, lastMessage: { body: msg.body, createdAt: msg.createdAt } } : c)
-          return prev
+          if (!other.id) return prev
+          const exists = prev.find(c => c.with.id === other.id)
+          const lastMessage = { body: msg.body, createdAt: msg.createdAt }
+          if (exists) return prev.map(c => c.with.id === other.id ? { ...c, lastMessage } : c)
+          return [{ with: other, lastMessage }, ...prev]
         })
       })
       socketRef.current = io
@@ -101,13 +111,9 @@ export function ChatView() {
     if (!input.trim() || !selected || !socketRef.current) return
     const body = input.trim()
     setInput('')
-    const temp: Message = { id: `temp-${Date.now()}`, senderId: me?.id ?? '', body, createdAt: new Date().toISOString(), sender: { fullName: me?.fullName ?? 'Yo' } }
-    setMessages(prev => [...prev, temp])
+    // The server persists the message and echoes it back on the 'message' event,
+    // which appends it to the thread + sidebar — so no optimistic insert needed.
     socketRef.current.emit('send_message', { recipientId: selected.id, body })
-    // ensure convo shows up
-    setConversations(prev => prev.find(c => c.with.id === selected.id)
-      ? prev.map(c => c.with.id === selected.id ? { ...c, lastMessage: { body, createdAt: temp.createdAt } } : c)
-      : [{ with: selected, lastMessage: { body, createdAt: temp.createdAt } }, ...prev])
   }
 
   const filteredContacts = contacts.filter(c => c.fullName.toLowerCase().includes(contactSearch.trim().toLowerCase()))

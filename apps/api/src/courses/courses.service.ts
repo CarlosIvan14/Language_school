@@ -37,7 +37,24 @@ export class CoursesService {
   async create(dto: CreateCourseDto) {
     // Auto-generate a unique course code if none was provided (e.g. ESP-B2-4821)
     const code = dto.code?.trim() || `ESP-${dto.level}-${Math.floor(1000 + Math.random() * 9000)}`
-    return this.prisma.course.create({ data: { ...dto, code } as any })
+    // Map snake_case DTO fields to Prisma's camelCase model fields
+    return this.prisma.course.create({
+      data: {
+        code,
+        title: dto.title,
+        description: dto.description,
+        level: dto.level as any,
+        teacherId: dto.teacher_id,
+        modality: dto.modality as any,
+        capacity: dto.capacity,
+        durationWeeks: dto.duration_weeks,
+        priceCents: dto.price_cents,
+        currency: dto.currency ?? 'USD',
+        startsAt: new Date(dto.starts_at),
+        endsAt: dto.ends_at ? new Date(dto.ends_at) : null,
+        status: 'active',
+      },
+    })
   }
 
   async update(id: string, dto: Partial<CreateCourseDto>) {

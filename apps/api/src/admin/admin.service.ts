@@ -14,7 +14,7 @@ export class AdminService {
       totalCertificates, activeProspects, recentEnrollments,
       recentPayments, attendanceData,
     ] = await Promise.all([
-      this.prisma.student.count(),
+      this.prisma.student.count({ where: { user: { role: 'student' } } }),
       this.prisma.course.count({ where: { status: { in: ['active', 'full'] } } }),
       this.prisma.payment.aggregate({
         where: { status: 'paid', createdAt: { gte: monthStart } },
@@ -60,9 +60,13 @@ export class AdminService {
 
   async getStudents(page = 1, limit = 20, search?: string) {
     const skip = (page - 1) * limit
-    const where = search ? {
-      user: { fullName: { contains: search, mode: 'insensitive' as const } },
-    } : {}
+    // Only real students — exclude profiles whose user was later promoted (e.g. to admin)
+    const where: any = {
+      user: {
+        role: 'student',
+        ...(search ? { fullName: { contains: search, mode: 'insensitive' as const } } : {}),
+      },
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.student.findMany({

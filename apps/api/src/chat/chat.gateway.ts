@@ -56,12 +56,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     })
 
+    // Deliver to the recipient (if online) and echo back to the sender so both
+    // sides get the persisted message with its real DB id.
     const recipientSocketId = this.userSockets.get(data.recipientId)
     if (recipientSocketId) {
-      this.server.to(recipientSocketId).emit('new_message', message)
+      this.server.to(recipientSocketId).emit('message', message)
     }
-
-    client.emit('message_sent', message)
+    client.emit('message', message)
   }
 
   @SubscribeMessage('mark_read')
