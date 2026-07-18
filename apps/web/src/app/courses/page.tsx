@@ -66,7 +66,14 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true)
   const [levelFilter, setLevelFilter] = useState('')
   const [modalityFilter, setModalityFilter] = useState('')
-  const user = auth.getUser()
+  const [user, setUser] = useState<{ role?: string } | null>(null)
+
+  useEffect(() => {
+    // Read session only on the client, and only if a valid token exists
+    if (auth.isLoggedIn()) setUser(auth.getUser())
+    else setUser(null)
+  }, [])
+
   const dashboardHref = user?.role === 'admin' ? '/admin/dashboard' : user?.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard'
 
   useEffect(() => {
