@@ -14,6 +14,7 @@ const nav = [
   { href: '/admin/courses',      label: 'Cursos',       icon: 'book'        as const },
   { href: '/admin/payments',     label: 'Pagos',        icon: 'credit-card' as const },
   { href: '/admin/crm',          label: 'CRM',          icon: 'funnel'      as const },
+  { href: '/admin/chat',         label: 'Chat',         icon: 'message'     as const },
   { href: '/admin/certificates', label: 'Certificados', icon: 'award'       as const },
   { href: '/admin/reports',      label: 'Reportes',     icon: 'bar-chart'   as const },
   { href: '/admin/settings',     label: 'Ajustes',      icon: 'settings'    as const },

@@ -18,6 +18,7 @@ const nav = [
   { href: '/teacher/grades',       label: 'Calificaciones', icon: 'bar-chart'    as const },
   { href: '/teacher/materials',    label: 'Materiales',     icon: 'folder'       as const },
   { href: '/teacher/chat',         label: 'Chat',           icon: 'message'      as const },
+  { href: '/teacher/profile',      label: 'Mi perfil',      icon: 'user'         as const },
 ]
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
