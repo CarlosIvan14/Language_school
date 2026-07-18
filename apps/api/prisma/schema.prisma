@@ -189,11 +189,29 @@ model Teacher {
   specialties SpanishLevel[]
   bio         String?
   hourlyRate  Decimal?       @map("hourly_rate") @db.Decimal(10, 2)
+  zoomLink    String?        @map("zoom_link")
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courses Course[]
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courses      Course[]
+  availability TeacherAvailability[]
 
   @@map("teachers")
+}
+
+// Weekly recurring availability slots — teachers mark their free hours.
+// weekday: 0=Sunday .. 6=Saturday. startMin/endMin: minutes from midnight (540 = 09:00).
+model TeacherAvailability {
+  id        String   @id @default(uuid())
+  teacherId String   @map("teacher_id")
+  weekday   Int
+  startMin  Int      @map("start_min")
+  endMin    Int      @map("end_min")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId])
+  @@map("teacher_availability")
 }
 
 // =============================================

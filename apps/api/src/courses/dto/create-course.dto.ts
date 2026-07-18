@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger'
 import type { SpanishLevel, CourseModality } from '@language-school/types'
 
 export class CreateCourseDto {
-  @ApiProperty() @IsString() code: string
+  @ApiProperty({ required: false }) @IsOptional() @IsString() code?: string
   @ApiProperty() @IsString() title: string
   @ApiProperty({ required: false }) @IsOptional() @IsString() description?: string
   @ApiProperty({ enum: ['A1','A2','B1','B2','C1','C2'] }) @IsEnum(['A1','A2','B1','B2','C1','C2']) level: SpanishLevel

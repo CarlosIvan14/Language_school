@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common'
+import * as bcrypt from 'bcryptjs'
 import { PrismaService } from '../prisma/prisma.service'
 
 @Injectable()
@@ -46,5 +47,51 @@ export class CrmService {
       stages.map(s => this.prisma.prospect.count({ where: { stage: s as any } }))
     )
     return stages.map((s, i) => ({ stage: s, count: counts[i] }))
+  }
+
+  // ── Convert a client (prospect) into a registered student account ──
+  async convertToStudent(prospectId: string, opts: { password?: string; nativeLanguage?: string; spanishLevel?: string }) {
+    const prospect = await this.prisma.prospect.findUnique({ where: { id: prospectId } })
+    if (!prospect) throw new NotFoundException('Cliente no encontrado')
+    if (!prospect.email) throw new BadRequestException('El cliente no tiene correo — agrégalo antes de convertir')
+
+    const existing = await this.prisma.user.findUnique({ where: { email: prospect.email } })
+    if (existing) throw new ConflictException('Ya existe una cuenta con ese correo')
+
+    // Use provided password or generate a temporary one to share with the client
+    const tempPassword = opts.password?.trim() || `Est-${Math.random().toString(36).slice(2, 8)}`
+    const passwordHash = await bcrypt.hash(tempPassword, 12)
+
+    const user = await this.prisma.user.create({
+      data: {
+        email: prospect.email,
+        passwordHash,
+        fullName: prospect.name,
+        phone: prospect.phone,
+        role: 'student',
+        student: {
+          create: {
+            nativeLanguage: opts.nativeLanguage ?? 'en',
+            spanishLevel: (opts.spanishLevel as any) ?? 'A1',
+          },
+        },
+      },
+      include: { student: true },
+    })
+
+    // Mark the prospect as converted
+    await this.prisma.prospect.update({
+      where: { id: prospectId },
+      data: { stage: 'converted' as any },
+    })
+
+    return {
+      studentId: user.student!.id,
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      tempPassword,           // returned once so the admin can share it
+      generated: !opts.password,
+    }
   }
 }

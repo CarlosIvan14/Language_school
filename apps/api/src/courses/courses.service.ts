@@ -35,7 +35,9 @@ export class CoursesService {
   }
 
   async create(dto: CreateCourseDto) {
-    return this.prisma.course.create({ data: dto as any })
+    // Auto-generate a unique course code if none was provided (e.g. ESP-B2-4821)
+    const code = dto.code?.trim() || `ESP-${dto.level}-${Math.floor(1000 + Math.random() * 9000)}`
+    return this.prisma.course.create({ data: { ...dto, code } as any })
   }
 
   async update(id: string, dto: Partial<CreateCourseDto>) {

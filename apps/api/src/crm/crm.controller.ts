@@ -2,11 +2,12 @@ import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards, Req } from
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
 import { CrmService } from './crm.service'
+import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 
 @ApiTags('crm')
 @Controller('crm')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @ApiBearerAuth()
 @Roles('admin', 'teacher')
 export class CrmController {
@@ -35,5 +36,13 @@ export class CrmController {
   @Get('funnel')
   getFunnel() {
     return this.crmService.getFunnel()
+  }
+
+  @Post('prospects/:id/convert')
+  convert(
+    @Param('id') id: string,
+    @Body() body: { password?: string; nativeLanguage?: string; spanishLevel?: string },
+  ) {
+    return this.crmService.convertToStudent(id, body)
   }
 }
