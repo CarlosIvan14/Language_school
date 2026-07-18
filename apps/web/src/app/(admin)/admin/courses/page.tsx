@@ -185,7 +185,7 @@ export default function AdminCoursesPage() {
                       <td className="px-4 py-3">
                         <span className="font-mono text-[13px]" style={{ color: 'rgb(var(--ink))' }}>
                           ${(course.priceCents / 100).toFixed(0)}
-                          <span className="text-[11px] ml-0.5" style={{ color: 'rgb(var(--ink3))' }}>MXN</span>
+                          <span className="text-[11px] ml-0.5" style={{ color: 'rgb(var(--ink3))' }}>USD</span>
                         </span>
                       </td>
                       <td className="px-4 py-3">

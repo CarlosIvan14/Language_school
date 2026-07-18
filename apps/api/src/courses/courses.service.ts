@@ -1,10 +1,58 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
+import { EmailService } from '../email/email.service'
 import type { CreateCourseDto } from './dto/create-course.dto'
 
 @Injectable()
 export class CoursesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private email: EmailService,
+  ) {}
+
+  // ── Class sessions (scheduled by the manager within a course) ──
+  async listSessions(courseId: string) {
+    return this.prisma.classSession.findMany({
+      where: { courseId },
+      orderBy: { scheduledAt: 'asc' },
+    })
+  }
+
+  async createSession(courseId: string, data: { title?: string; scheduledAt: string; durationMin?: number }) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        teacher: { include: { user: { select: { email: true } } } },
+        enrollments: { where: { status: 'active' }, include: { student: { include: { user: { select: { email: true } } } } } },
+      },
+    })
+    if (!course) throw new NotFoundException('Curso no encontrado')
+
+    const session = await this.prisma.classSession.create({
+      data: {
+        courseId,
+        title: data.title || course.title,
+        scheduledAt: new Date(data.scheduledAt),
+        durationMin: data.durationMin ?? 60,
+        zoomLink: course.teacher?.zoomLink ?? null, // always the teacher's Zoom room
+        status: 'scheduled',
+      },
+    })
+
+    // Notify enrolled students that a class was scheduled (dev/console email)
+    const startsAt = session.scheduledAt
+    for (const e of course.enrollments) {
+      const to = e.student.user.email
+      if (to) this.email.sendClassScheduled(to, { courseTitle: course.title, startsAt, zoomLink: session.zoomLink ?? undefined }).catch(() => {})
+    }
+
+    return session
+  }
+
+  async deleteSession(sessionId: string) {
+    await this.prisma.classSession.delete({ where: { id: sessionId } }).catch(() => {})
+    return { ok: true }
+  }
 
   async findAll(filters: { level?: string; modality?: string } = {}) {
     return this.prisma.course.findMany({

@@ -3,6 +3,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
 import { CoursesService } from './courses.service'
 import { CreateCourseDto } from './dto/create-course.dto'
+import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
 
 @ApiTags('courses')
@@ -25,6 +26,29 @@ export class CoursesController {
   @ApiBearerAuth()
   roster(@Param('id') id: string) {
     return this.coursesService.getRoster(id)
+  }
+
+  @Get(':id/sessions')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  listSessions(@Param('id') id: string) {
+    return this.coursesService.listSessions(id)
+  }
+
+  @Post(':id/sessions')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  createSession(@Param('id') id: string, @Body() body: { title?: string; scheduledAt: string; durationMin?: number }) {
+    return this.coursesService.createSession(id, body)
+  }
+
+  @Delete('sessions/:sessionId')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  deleteSession(@Param('sessionId') sessionId: string) {
+    return this.coursesService.deleteSession(sessionId)
   }
 
   @Post()
