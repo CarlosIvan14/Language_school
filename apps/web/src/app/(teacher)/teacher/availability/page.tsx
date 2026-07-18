@@ -28,6 +28,7 @@ export default function AvailabilityPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [dragging, setDragging] = useState<null | boolean>(null) // true=painting on, false=erasing
+  const [err, setErr] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -84,8 +85,9 @@ export default function AvailabilityPage() {
     try {
       await api.put('/teachers/me/availability', { slots })
       setSaved(true)
-    } catch {
-      /* keep silent error; button re-enables */
+      setErr('')
+    } catch (e: any) {
+      setErr(e?.message ?? 'No se pudo guardar el horario')
     } finally {
       setSaving(false)
     }
@@ -170,6 +172,13 @@ export default function AvailabilityPage() {
           )}
         </div>
       </div>
+
+      {err && (
+        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg text-[12px]"
+          style={{ background: 'rgba(248,113,113,0.08)', color: 'rgb(var(--err))', border: '1px solid rgba(248,113,113,0.15)' }}>
+          <Icon name="alert-circle" size={14} /> {err}
+        </div>
+      )}
 
       {/* Legend */}
       <div className="flex items-center gap-4 mt-4 text-[11px] animate-fade-up" style={{ animationDelay: '100ms', color: 'rgb(var(--ink2))' }}>

@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, Eye, EyeOff, Loader2, XCircle } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Loader2, XCircle, ArrowLeft } from 'lucide-react'
 import { auth } from '@/lib/api'
 
 export default function LoginPage() {
@@ -66,6 +66,11 @@ export default function LoginPage() {
           background: 'radial-gradient(ellipse, rgba(245,166,35,0.04) 0%, transparent 65%)',
         }}
       />
+
+      <Link href="/" className="absolute top-5 left-5 z-20 flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full transition-colors"
+        style={{ color: 'rgb(var(--ink2))', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <ArrowLeft size={13} /> Inicio
+      </Link>
 
       <div className="w-full max-w-[390px] relative z-10 animate-fade-up">
         {/* Logo */}

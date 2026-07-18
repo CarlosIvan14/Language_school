@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, Eye, EyeOff, User, Phone, Globe, Loader2, XCircle, CheckCircle, ChevronLeft } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, User, Phone, Globe, Loader2, XCircle, CheckCircle, ChevronLeft, ArrowLeft } from 'lucide-react'
 import { auth } from '@/lib/api'
 
 const TIMEZONES = [
@@ -115,6 +115,11 @@ export default function RegisterPage() {
       {/* Orbs */}
       <div className="absolute pointer-events-none" style={{ top: '10%', left: '15%', width: 700, height: 500, background: 'radial-gradient(ellipse, rgba(79,142,247,0.07) 0%, transparent 65%)', transform: 'translate(-50%,-50%)' }} />
       <div className="absolute pointer-events-none" style={{ bottom: '5%', right: '5%', width: 500, height: 400, background: 'radial-gradient(ellipse, rgba(52,211,153,0.05) 0%, transparent 65%)' }} />
+
+      <Link href="/" className="absolute top-5 left-5 z-20 flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-full transition-colors"
+        style={{ color: 'rgb(var(--ink2))', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <ArrowLeft size={13} /> Inicio
+      </Link>
 
       <div className="w-full max-w-[490px] relative z-10 animate-fade-up">
         {/* Logo */}

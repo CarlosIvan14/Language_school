@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { Icon, type IconName } from '@/components/Icon'
+import { ZoomLogo } from '@/components/ZoomLogo'
 
 type Tab = 'materials' | 'homework' | 'sessions'
 const TABS: { key: Tab; label: string; icon: IconName }[] = [
@@ -118,7 +119,12 @@ export default function StudentCourseDetailPage() {
                 <div key={s.id} className="bezel"><div className="bezel-inner p-4 flex items-center gap-3">
                   <div className="text-center w-14 flex-shrink-0"><p className="font-mono text-[13px] font-medium" style={{ color: 'rgb(var(--blue))' }}>{new Date(s.scheduledAt).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}</p><p className="text-[10px]" style={{ color: 'rgb(var(--ink3))' }}>{new Date(s.scheduledAt).toLocaleDateString('es', { day: 'numeric', month: 'short' })}</p></div>
                   <p className="text-[13px] flex-1" style={{ color: 'rgb(var(--ink))' }}>{s.title ?? 'Sesión'}</p>
-                  {s.zoomLink && <a href={s.zoomLink} target="_blank" rel="noreferrer" className="btn-primary text-[12px] px-3 py-1.5" style={{ borderRadius: '0.5rem' }}><Icon name="video" size={13} /> Unirse</a>}
+                  {s.zoomLink && (
+                    <span className="flex items-center gap-1.5">
+                      <ZoomLogo size={18} />
+                      <a href={s.zoomLink} target="_blank" rel="noreferrer" className="btn-primary text-[12px] px-3 py-1.5" style={{ borderRadius: '0.5rem' }}>Unirse</a>
+                    </span>
+                  )}
                 </div></div>
               ))}
             </div>

@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { Icon, type IconName } from '@/components/Icon'
+import { ZoomLogo } from '@/components/ZoomLogo'
 
 type Tab = 'students' | 'sessions' | 'attendance' | 'homework' | 'grades' | 'materials'
 const TABS: { key: Tab; label: string; icon: IconName }[] = [
@@ -143,7 +144,12 @@ function SessionsTab({ sessions }: { sessions: any[] }) {
             <p className="text-[13px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>{s.title ?? 'Sesión'}</p>
             <p className="text-[11px]" style={{ color: 'rgb(var(--ink2))' }}>{s.durationMin ?? 60} min</p>
           </div>
-          {s.zoomLink && <a href={s.zoomLink} target="_blank" rel="noreferrer" className="btn-primary text-[12px] px-3 py-1.5 flex-shrink-0" style={{ borderRadius: '0.5rem' }}><Icon name="video" size={13} /> Zoom</a>}
+          {s.zoomLink && (
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              <ZoomLogo size={18} />
+              <a href={s.zoomLink} target="_blank" rel="noreferrer" className="btn-primary text-[12px] px-3 py-1.5" style={{ borderRadius: '0.5rem' }}>Entrar</a>
+            </span>
+          )}
         </div></div>
       ))}
     </div>

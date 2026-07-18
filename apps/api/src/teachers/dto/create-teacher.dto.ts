@@ -1,4 +1,5 @@
-import { IsString, IsEmail, MinLength, IsOptional, IsArray, IsEnum, IsNumber, Min } from 'class-validator'
+import { IsString, IsEmail, MinLength, IsOptional, IsArray, IsEnum, IsNumber, Min, ValidateNested } from 'class-validator'
+import { Type } from 'class-transformer'
 import { ApiProperty } from '@nestjs/swagger'
 import type { SpanishLevel } from '@language-school/types'
 
@@ -23,5 +24,7 @@ export class AvailabilitySlotDto {
 export class SetAvailabilityDto {
   @ApiProperty({ type: [AvailabilitySlotDto] })
   @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AvailabilitySlotDto)
   slots: AvailabilitySlotDto[]
 }

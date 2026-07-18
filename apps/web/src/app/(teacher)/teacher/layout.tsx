@@ -1,12 +1,11 @@
 // FILE: apps/web/src/app/(teacher)/teacher/layout.tsx
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { auth } from '@/lib/api'
+import { usePathname } from 'next/navigation'
 import { Icon } from '@/components/Icon'
 import { ChatNavBadge } from '@/components/ChatNavBadge'
+import { SidebarUser } from '@/components/SidebarUser'
 
 const nav = [
   { href: '/teacher/dashboard',    label: 'Dashboard',    icon: 'home'     as const },
@@ -18,16 +17,6 @@ const nav = [
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter()
-  const [user, setUser] = useState<{ fullName: string; email?: string; role?: string } | null>(null)
-  useEffect(() => { setUser(auth.getUser()) }, [])
-  const initials = (user?.fullName ?? '').split(' ').filter(Boolean).map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'P'
-
-  async function handleLogout() {
-    try { await auth.logout() } catch {}
-    auth.clearTokens()
-    router.push('/login')
-  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'rgb(var(--bg))' }}>
@@ -82,27 +71,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
           })}
         </nav>
 
-        <div className="p-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="flex items-center gap-2.5 rounded-lg p-1">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
-              style={{ background: 'rgba(79,142,247,0.15)', color: 'rgb(var(--blue))' }}>
-              {initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>
-                {user?.fullName ?? 'Profesor'}
-              </p>
-              <p className="text-[10px]" style={{ color: 'rgb(var(--ink2))' }}>Profesor</p>
-            </div>
-          </div>
-          <button onClick={handleLogout}
-            className="mt-2 text-[11px] transition-colors"
-            style={{ color: 'rgb(var(--ink2))' }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'rgb(var(--err))')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'rgb(var(--ink2))')}>
-            Cerrar sesión
-          </button>
-        </div>
+        <SidebarUser profileHref="/teacher/profile" roleLabel="Profesor" fallback="Profesor" />
       </aside>
 
       <div className="flex-1 overflow-auto relative z-10">

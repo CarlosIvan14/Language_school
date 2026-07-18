@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { Icon } from '@/components/Icon'
+import { ZoomLogo } from '@/components/ZoomLogo'
 
 export default function CalendarPage() {
   const [sessions, setSessions] = useState<any[]>([])
@@ -46,9 +47,10 @@ export default function CalendarPage() {
                       <p className="text-[11px]" style={{ color: 'rgb(var(--ink2))' }}>{s.durationMin ?? 60} min</p>
                     </div>
                     {s.zoomLink && (
-                      <a href={s.zoomLink} target="_blank" rel="noopener noreferrer" className="btn-primary text-[12px] px-3 py-1.5 flex-shrink-0" style={{ borderRadius: '0.5rem' }}>
-                        <Icon name="video" size={13} /> Unirse
-                      </a>
+                      <span className="flex items-center gap-1.5 flex-shrink-0">
+                        <ZoomLogo size={18} />
+                        <a href={s.zoomLink} target="_blank" rel="noopener noreferrer" className="btn-primary text-[12px] px-3 py-1.5" style={{ borderRadius: '0.5rem' }}>Unirse</a>
+                      </span>
                     )}
                   </div></div>
                 ))}
