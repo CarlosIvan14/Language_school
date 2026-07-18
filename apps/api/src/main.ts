@@ -1,14 +1,23 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
+import { NestExpressApplication } from '@nestjs/platform-express'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
+import { join } from 'path'
+import { existsSync, mkdirSync } from 'fs'
 import helmet from 'helmet'
 import { AppModule } from './app.module'
 import { AllExceptionsFilter } from './common/filters/http-exception.filter'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true })
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true })
 
-  app.use(helmet())
+  // helmet with crossOriginResourcePolicy relaxed so the web app can load /uploads images
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+
+  // Serve uploaded files (avatars) statically at /uploads
+  const uploadDir = process.env.UPLOAD_DIR ?? './uploads'
+  if (!existsSync(uploadDir)) mkdirSync(uploadDir, { recursive: true })
+  app.useStaticAssets(join(process.cwd(), uploadDir), { prefix: '/uploads/' })
 
   app.enableCors({
     origin: [process.env.FRONTEND_URL ?? 'http://localhost:3000'],

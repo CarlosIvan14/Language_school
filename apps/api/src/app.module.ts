@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
+import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { PrismaModule } from './prisma/prisma.module'
+import { EmailModule } from './email/email.module'
+import { RemindersModule } from './reminders/reminders.module'
 import { AuthModule } from './auth/auth.module'
 import { CoursesModule } from './courses/courses.module'
 import { StudentsModule } from './students/students.module'
@@ -21,11 +24,14 @@ import { NotificationsModule } from './notifications/notifications.module'
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       { name: 'global', ttl: 60_000, limit: 60 },
       { name: 'auth', ttl: 60_000, limit: 5 },
     ]),
     PrismaModule,
+    EmailModule,
+    RemindersModule,
     AuthModule,
     CoursesModule,
     StudentsModule,

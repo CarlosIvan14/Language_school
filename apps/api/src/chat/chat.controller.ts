@@ -56,4 +56,71 @@ export class ChatController {
       where: { recipientId: req.user.id, readAt: null },
     })
   }
+
+  /**
+   * Contacts a user is allowed to chat with, by role:
+   * - admin (manager): everyone
+   * - teacher: admins + other teachers + students in their courses
+   * - student: admins + teachers of their courses + classmates
+   */
+  @Get('contacts')
+  async getContacts(@Req() req: any) {
+    const userId: string = req.user.id
+    const role: string = req.user.role
+    const ids = new Set<string>()
+
+    // Everyone can reach admins (the manager)
+    const admins = await this.prisma.user.findMany({ where: { role: 'admin' }, select: { id: true } })
+    admins.forEach(a => ids.add(a.id))
+
+    if (role === 'admin') {
+      const all = await this.prisma.user.findMany({ where: { NOT: { id: userId } }, select: { id: true } })
+      all.forEach(u => ids.add(u.id))
+    } else if (role === 'teacher') {
+      // other teachers
+      const teachers = await this.prisma.user.findMany({ where: { role: 'teacher' }, select: { id: true } })
+      teachers.forEach(t => ids.add(t.id))
+      // students enrolled in this teacher's courses
+      const teacher = await this.prisma.teacher.findUnique({ where: { userId } })
+      if (teacher) {
+        const enrollments = await this.prisma.enrollment.findMany({
+          where: { course: { teacherId: teacher.id } },
+          select: { student: { select: { userId: true } } },
+        })
+        enrollments.forEach(e => ids.add(e.student.userId))
+      }
+    } else if (role === 'student') {
+      const student = await this.prisma.student.findUnique({ where: { userId } })
+      if (student) {
+        const myCourses = await this.prisma.enrollment.findMany({
+          where: { studentId: student.id },
+          select: { courseId: true },
+        })
+        const courseIds = myCourses.map(c => c.courseId)
+        if (courseIds.length) {
+          // teachers of those courses
+          const courses = await this.prisma.course.findMany({
+            where: { id: { in: courseIds } },
+            select: { teacher: { select: { userId: true } } },
+          })
+          courses.forEach(c => c.teacher?.userId && ids.add(c.teacher.userId))
+          // classmates
+          const classmates = await this.prisma.enrollment.findMany({
+            where: { courseId: { in: courseIds } },
+            select: { student: { select: { userId: true } } },
+          })
+          classmates.forEach(e => ids.add(e.student.userId))
+        }
+      }
+    }
+
+    ids.delete(userId) // never list yourself
+
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: [...ids] } },
+      select: { id: true, fullName: true, avatarUrl: true, role: true },
+      orderBy: { fullName: 'asc' },
+    })
+    return users
+  }
 }
