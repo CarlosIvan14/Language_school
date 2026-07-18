@@ -39,17 +39,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('send_message')
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { recipientId: string; body: string; courseId?: string },
+    @MessageBody() data: { recipientId: string; body: string; courseId?: string; attachmentUrl?: string; attachmentType?: string },
   ) {
     const senderId = client.data.userId
-    if (!senderId || !data.body?.trim()) return
+    // Allow a message with just an attachment (empty body)
+    if (!senderId || (!data.body?.trim() && !data.attachmentUrl)) return
 
     const message = await this.prisma.message.create({
       data: {
         senderId,
         recipientId: data.recipientId,
         courseId: data.courseId ?? null,
-        body: data.body.trim(),
+        body: data.body?.trim() ?? '',
+        attachmentUrl: data.attachmentUrl ?? null,
+        attachmentType: data.attachmentType ?? null,
       },
       include: {
         sender: { select: { fullName: true, avatarUrl: true } },

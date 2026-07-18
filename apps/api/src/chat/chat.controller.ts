@@ -1,4 +1,8 @@
-import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common'
+import { Controller, Get, Post, Query, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
+import { diskStorage } from 'multer'
+import { extname } from 'path'
+import { randomUUID } from 'crypto'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import { AuthGuard } from '@nestjs/passport'
 import { PrismaService } from '../prisma/prisma.service'
@@ -32,6 +36,16 @@ export class ChatController {
         conversations.push({ with: other, lastMessage: m })
       }
     }
+
+    // Per-conversation unread count (messages the other party sent me, still unread)
+    const unreadRows = await this.prisma.message.groupBy({
+      by: ['senderId'],
+      where: { recipientId: userId, readAt: null },
+      _count: { _all: true },
+    })
+    const unreadBy = new Map(unreadRows.map(r => [r.senderId, r._count._all]))
+    for (const c of conversations) c.unread = unreadBy.get(c.with.id) ?? 0
+
     return conversations
   }
 
@@ -55,6 +69,25 @@ export class ChatController {
     return this.prisma.message.count({
       where: { recipientId: req.user.id, readAt: null },
     })
+  }
+
+  // Upload an image or PDF to attach to a chat message
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: process.env.UPLOAD_DIR ?? './uploads',
+      filename: (_req, file, cb) => cb(null, `chat-${randomUUID()}${extname(file.originalname)}`),
+    }),
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15 MB
+    fileFilter: (_req, file, cb) => {
+      if (/^(image\/(png|jpe?g|webp|gif)|application\/pdf)$/.test(file.mimetype)) cb(null, true)
+      else cb(new BadRequestException('Solo imágenes o PDF'), false)
+    },
+  }))
+  upload(@UploadedFile() file: any) {
+    if (!file) throw new BadRequestException('No se recibió archivo')
+    const type = file.mimetype.startsWith('image/') ? 'image' : 'file'
+    return { url: `/uploads/${file.filename}`, type }
   }
 
   /**

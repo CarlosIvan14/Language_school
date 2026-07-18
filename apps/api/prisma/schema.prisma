@@ -431,13 +431,15 @@ model Certificate {
 // =============================================
 
 model Message {
-  id          String    @id @default(uuid())
-  senderId    String    @map("sender_id")
-  recipientId String    @map("recipient_id")
-  courseId    String?   @map("course_id")
-  body        String
-  readAt      DateTime? @map("read_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  id             String    @id @default(uuid())
+  senderId       String    @map("sender_id")
+  recipientId    String    @map("recipient_id")
+  courseId       String?   @map("course_id")
+  body           String
+  attachmentUrl  String?   @map("attachment_url")
+  attachmentType String?   @map("attachment_type") // "image" | "file"
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   sender    User @relation("SentMessages", fields: [senderId], references: [id])
   recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id])

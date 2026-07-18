@@ -8,8 +8,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1
 const API_ORIGIN = API_URL.replace(/\/api\/v1\/?$/, '')
 
 interface ChatUser { id: string; fullName: string; avatarUrl?: string; role?: string }
-interface Conversation { with: ChatUser; lastMessage: { body: string; createdAt: string } }
-interface Message { id: string; senderId: string; body: string; createdAt: string; readAt?: string | null; sender: { fullName: string; avatarUrl?: string } }
+interface Conversation { with: ChatUser; lastMessage: { body: string; createdAt: string }; unread?: number }
+interface Message { id: string; senderId: string; body: string; createdAt: string; readAt?: string | null; attachmentUrl?: string | null; attachmentType?: string | null; sender: { fullName: string; avatarUrl?: string } }
+
+function fileUrl(u?: string | null) { return !u ? '' : u.startsWith('http') ? u : `${API_ORIGIN}${u}` }
 
 // Delivered = single check; Read = double check (blue)
 function Ticks({ read }: { read: boolean }) {
@@ -55,6 +57,8 @@ export function ChatView() {
   const [loadingConvs, setLoadingConvs] = useState(true)
   const [showContacts, setShowContacts] = useState(false)
   const [contactSearch, setContactSearch] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const socketRef = useRef<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const selectedRef = useRef<ChatUser | null>(null)
@@ -90,13 +94,15 @@ export function ChatView() {
           if (!iAmSender) io.emit('mark_read', { fromUser: sel.id })
         }
 
-        // Update / insert the conversation in the sidebar
+        // Update / insert the conversation in the sidebar (+ bump unread if not open)
+        const isOpen = sel && other.id === sel.id
+        const bump = !iAmSender && !isOpen ? 1 : 0
         setConversations(prev => {
           if (!other.id) return prev
           const exists = prev.find(c => c.with.id === other.id)
-          const lastMessage = { body: msg.body, createdAt: msg.createdAt }
-          if (exists) return prev.map(c => c.with.id === other.id ? { ...c, lastMessage } : c)
-          return [{ with: other, lastMessage }, ...prev]
+          const lastMessage = { body: msg.body || (msg.attachmentType === 'image' ? 'Imagen' : 'Archivo'), createdAt: msg.createdAt }
+          if (exists) return prev.map(c => c.with.id === other.id ? { ...c, lastMessage, unread: (c.unread ?? 0) + bump } : c)
+          return [{ with: other, lastMessage, unread: bump }, ...prev]
         })
       })
 
@@ -117,8 +123,9 @@ export function ChatView() {
   const loadMessages = useCallback(async (user: ChatUser) => {
     setMessages([])
     try { setMessages(await api.get<Message[]>(`/chat/messages?withUser=${user.id}`)) } catch {}
-    // Mark this person's messages as read
+    // Mark this person's messages as read + clear its unread badge
     if (socketRef.current) socketRef.current.emit('mark_read', { fromUser: user.id })
+    setConversations(prev => prev.map(c => c.with.id === user.id ? { ...c, unread: 0 } : c))
     window.dispatchEvent(new Event('chat:read')) // let the sidebar badge refresh
   }, [])
 
@@ -131,13 +138,28 @@ export function ChatView() {
     setContactSearch('')
   }
 
-  function sendMessage() {
-    if (!input.trim() || !selected || !socketRef.current) return
+  function sendMessage(attachment?: { url: string; type: string }) {
+    if ((!input.trim() && !attachment) || !selected || !socketRef.current) return
     const body = input.trim()
     setInput('')
-    // The server persists the message and echoes it back on the 'message' event,
-    // which appends it to the thread + sidebar — so no optimistic insert needed.
-    socketRef.current.emit('send_message', { recipientId: selected.id, body })
+    socketRef.current.emit('send_message', {
+      recipientId: selected.id, body,
+      attachmentUrl: attachment?.url, attachmentType: attachment?.type,
+    })
+  }
+
+  async function onAttach(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !selected) return
+    setUploading(true)
+    try {
+      const fd = new FormData(); fd.append('file', file)
+      const token = localStorage.getItem('access_token')
+      const res = await fetch(`${API_URL}/chat/upload`, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : undefined, body: fd })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      sendMessage({ url: data.url, type: data.type })
+    } catch {} finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = '' }
   }
 
   const filteredContacts = contacts.filter(c => c.fullName.toLowerCase().includes(contactSearch.trim().toLowerCase()))
@@ -216,7 +238,12 @@ export function ChatView() {
                     <p className="text-[12px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>{conv.with.fullName}</p>
                     <span className="text-[10px] flex-shrink-0" style={{ color: 'rgb(var(--ink3))' }}>{formatTime(conv.lastMessage.createdAt)}</span>
                   </div>
-                  <p className="text-[11px] truncate mt-0.5" style={{ color: 'rgb(var(--ink2))' }}>{conv.lastMessage.body}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] truncate mt-0.5" style={{ color: (conv.unread ?? 0) > 0 ? 'rgb(var(--ink))' : 'rgb(var(--ink2))' }}>{conv.lastMessage.body || 'Archivo adjunto'}</p>
+                    {(conv.unread ?? 0) > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0" style={{ background: 'rgb(var(--blue))', color: '#fff' }}>{conv.unread}</span>
+                    )}
+                  </div>
                 </div>
               </button>
             ))}
@@ -250,6 +277,16 @@ export function ChatView() {
                     <div className="max-w-[65%]">
                       <div className="px-3 py-2 rounded-2xl text-[13px]"
                         style={{ background: isMe ? 'rgb(var(--blue))' : 'rgb(var(--s2))', color: isMe ? '#fff' : 'rgb(var(--ink))', borderBottomRightRadius: isMe ? 4 : undefined, borderBottomLeftRadius: !isMe ? 4 : undefined }}>
+                        {msg.attachmentUrl && msg.attachmentType === 'image' && (
+                          <a href={fileUrl(msg.attachmentUrl)} target="_blank" rel="noreferrer">
+                            <img src={fileUrl(msg.attachmentUrl)} alt="" className="rounded-lg mb-1 max-h-56 object-cover" style={{ maxWidth: '100%' }} />
+                          </a>
+                        )}
+                        {msg.attachmentUrl && msg.attachmentType !== 'image' && (
+                          <a href={fileUrl(msg.attachmentUrl)} target="_blank" rel="noreferrer" className="flex items-center gap-2 mb-1 underline" style={{ color: isMe ? '#fff' : 'rgb(var(--blue))' }}>
+                            <Icon name="file-text" size={15} /> Ver archivo (PDF)
+                          </a>
+                        )}
                         {msg.body}
                       </div>
                       <p className={`text-[10px] mt-1 px-1 flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`} style={{ color: 'rgb(var(--ink3))' }}>
@@ -263,13 +300,19 @@ export function ChatView() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div className="flex items-end gap-3 px-5 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgb(var(--bd))', background: 'rgb(var(--s0))' }}>
+            <div className="flex items-end gap-2 px-5 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgb(var(--bd))', background: 'rgb(var(--s0))' }}>
+              <input ref={fileInputRef} type="file" accept="image/*,application/pdf" onChange={onAttach} className="hidden" />
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} title="Adjuntar imagen o PDF"
+                className="p-2.5 rounded-xl flex-shrink-0 transition-colors disabled:opacity-40"
+                style={{ background: 'rgb(var(--s2))', color: 'rgb(var(--ink2))' }}>
+                <Icon name={uploading ? 'clock' : 'plus'} size={16} />
+              </button>
               <textarea rows={1} placeholder="Escribe un mensaje..." value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                 className="flex-1 text-[13px] px-4 py-2.5 rounded-xl outline-none resize-none"
                 style={{ background: 'rgb(var(--s2))', border: '1px solid rgb(var(--bd))', color: 'rgb(var(--ink))', maxHeight: 120 }} />
-              <button onClick={sendMessage} disabled={!input.trim()} className="btn-primary p-2.5 rounded-xl flex-shrink-0 disabled:opacity-40">
+              <button onClick={() => sendMessage()} disabled={!input.trim()} className="btn-primary p-2.5 rounded-xl flex-shrink-0 disabled:opacity-40">
                 <Icon name="send" size={16} />
               </button>
             </div>
