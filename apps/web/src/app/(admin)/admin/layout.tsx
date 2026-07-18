@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { auth } from '@/lib/api'
 import { Icon } from '@/components/Icon'
+import { ChatNavBadge } from '@/components/ChatNavBadge'
 
 const nav = [
   { href: '/admin/dashboard',    label: 'Dashboard',    icon: 'home'        as const },
@@ -86,6 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 }}>
                 <Icon name={item.icon} size={15} />
                 {item.label}
+                {item.href.endsWith('/chat') && <ChatNavBadge />}
               </Link>
             )
           })}

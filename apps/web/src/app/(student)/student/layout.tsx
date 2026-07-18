@@ -6,14 +6,13 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { auth } from '@/lib/api'
 import { Icon } from '@/components/Icon'
+import { ChatNavBadge } from '@/components/ChatNavBadge'
 
 const nav = [
   { href: '/student/dashboard',    label: 'Dashboard',    icon: 'home'        as const },
   { href: '/student/courses',      label: 'Mis cursos',   icon: 'book'        as const },
   { href: '/student/calendar',     label: 'Calendario',   icon: 'calendar'    as const },
-  { href: '/student/homework',     label: 'Tareas',       icon: 'clipboard'   as const },
   { href: '/student/exams',        label: 'Exámenes',     icon: 'file-text'   as const },
-  { href: '/student/materials',    label: 'Materiales',   icon: 'folder'      as const },
   { href: '/student/certificates', label: 'Certificados', icon: 'award'       as const },
   { href: '/student/chat',         label: 'Chat',         icon: 'message'     as const },
   { href: '/student/payments',     label: 'Pagos',        icon: 'credit-card' as const },
@@ -83,6 +82,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 }}>
                 <Icon name={item.icon} size={15} />
                 {item.label}
+                {item.href.endsWith('/chat') && <ChatNavBadge />}
               </Link>
             )
           })}

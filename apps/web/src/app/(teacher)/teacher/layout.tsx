@@ -6,19 +6,14 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { auth } from '@/lib/api'
 import { Icon } from '@/components/Icon'
+import { ChatNavBadge } from '@/components/ChatNavBadge'
 
 const nav = [
-  { href: '/teacher/dashboard',    label: 'Dashboard',      icon: 'home'         as const },
-  { href: '/teacher/courses',      label: 'Mis cursos',     icon: 'book'         as const },
-  { href: '/teacher/availability', label: 'Mi horario',     icon: 'calendar'     as const },
-  { href: '/teacher/students',     label: 'Estudiantes',    icon: 'users'        as const },
-  { href: '/teacher/sessions',     label: 'Sesiones',       icon: 'video'        as const },
-  { href: '/teacher/attendance',   label: 'Asistencia',     icon: 'check-circle' as const },
-  { href: '/teacher/homework',     label: 'Tareas',         icon: 'clipboard'    as const },
-  { href: '/teacher/grades',       label: 'Calificaciones', icon: 'bar-chart'    as const },
-  { href: '/teacher/materials',    label: 'Materiales',     icon: 'folder'       as const },
-  { href: '/teacher/chat',         label: 'Chat',           icon: 'message'      as const },
-  { href: '/teacher/profile',      label: 'Mi perfil',      icon: 'user'         as const },
+  { href: '/teacher/dashboard',    label: 'Dashboard',    icon: 'home'     as const },
+  { href: '/teacher/courses',      label: 'Mis cursos',   icon: 'book'     as const },
+  { href: '/teacher/availability', label: 'Mi horario',   icon: 'calendar' as const },
+  { href: '/teacher/chat',         label: 'Chat',         icon: 'message'  as const },
+  { href: '/teacher/profile',      label: 'Mi perfil',    icon: 'user'     as const },
 ]
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
@@ -81,6 +76,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
                 }}>
                 <Icon name={item.icon} size={15} />
                 {item.label}
+                {item.href.endsWith('/chat') && <ChatNavBadge />}
               </Link>
             )
           })}

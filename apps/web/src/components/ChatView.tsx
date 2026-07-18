@@ -9,7 +9,17 @@ const API_ORIGIN = API_URL.replace(/\/api\/v1\/?$/, '')
 
 interface ChatUser { id: string; fullName: string; avatarUrl?: string; role?: string }
 interface Conversation { with: ChatUser; lastMessage: { body: string; createdAt: string } }
-interface Message { id: string; senderId: string; body: string; createdAt: string; sender: { fullName: string; avatarUrl?: string } }
+interface Message { id: string; senderId: string; body: string; createdAt: string; readAt?: string | null; sender: { fullName: string; avatarUrl?: string } }
+
+// Delivered = single check; Read = double check (blue)
+function Ticks({ read }: { read: boolean }) {
+  return (
+    <svg width="16" height="11" viewBox="0 0 16 11" fill="none" style={{ display: 'inline-block', verticalAlign: 'middle' }}>
+      <path d="M1 5.5L4 8.5L9.5 2.5" stroke={read ? '#8ec5ff' : 'rgba(255,255,255,0.55)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.5 8.2L7 8.5L12.5 2.5" stroke={read ? '#8ec5ff' : 'rgba(255,255,255,0.55)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
 
 function initials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?'
@@ -76,6 +86,8 @@ export function ChatView() {
         // Append to the open thread if it belongs to the selected conversation
         if (sel && other.id === sel.id) {
           setMessages(prev => prev.find(m => m.id === msg.id) ? prev : [...prev, msg])
+          // If it's an incoming message in the open chat, mark it read immediately
+          if (!iAmSender) io.emit('mark_read', { fromUser: sel.id })
         }
 
         // Update / insert the conversation in the sidebar
@@ -87,6 +99,15 @@ export function ChatView() {
           return [{ with: other, lastMessage }, ...prev]
         })
       })
+
+      // The other party read my messages → flip my ticks to "read"
+      io.on('read', ({ by }: { by: string }) => {
+        const sel = selectedRef.current
+        if (sel && sel.id === by) {
+          setMessages(prev => prev.map(m => m.senderId === me?.id ? { ...m, readAt: m.readAt ?? new Date().toISOString() } : m))
+        }
+      })
+
       socketRef.current = io
     }).catch(() => {})
     return () => { if (socketRef.current) socketRef.current.disconnect() }
@@ -96,6 +117,9 @@ export function ChatView() {
   const loadMessages = useCallback(async (user: ChatUser) => {
     setMessages([])
     try { setMessages(await api.get<Message[]>(`/chat/messages?withUser=${user.id}`)) } catch {}
+    // Mark this person's messages as read
+    if (socketRef.current) socketRef.current.emit('mark_read', { fromUser: user.id })
+    window.dispatchEvent(new Event('chat:read')) // let the sidebar badge refresh
   }, [])
 
   useEffect(() => { if (selected) loadMessages(selected) }, [selected, loadMessages])
@@ -228,7 +252,10 @@ export function ChatView() {
                         style={{ background: isMe ? 'rgb(var(--blue))' : 'rgb(var(--s2))', color: isMe ? '#fff' : 'rgb(var(--ink))', borderBottomRightRadius: isMe ? 4 : undefined, borderBottomLeftRadius: !isMe ? 4 : undefined }}>
                         {msg.body}
                       </div>
-                      <p className={`text-[10px] mt-1 px-1 ${isMe ? 'text-right' : 'text-left'}`} style={{ color: 'rgb(var(--ink3))' }}>{formatTime(msg.createdAt)}</p>
+                      <p className={`text-[10px] mt-1 px-1 flex items-center gap-1 ${isMe ? 'justify-end' : 'justify-start'}`} style={{ color: 'rgb(var(--ink3))' }}>
+                        {formatTime(msg.createdAt)}
+                        {isMe && !String(msg.id).startsWith('temp-') && <Ticks read={!!msg.readAt} />}
+                      </p>
                     </div>
                   </div>
                 )

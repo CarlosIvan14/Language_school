@@ -68,12 +68,8 @@ export default function StudentCoursesPage() {
                       ● {e.status === 'active' ? 'Activo' : 'Lista de espera'}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <Link href={`/courses/${e.courseId}`} className="flex-1 text-center text-[12px] py-1.5 rounded-lg transition-colors"
-                      style={{ background: 'rgb(var(--s2))', color: 'rgb(var(--ink))' }}>Ver detalles</Link>
-                    <Link href="/student/materials" className="flex-1 text-center text-[12px] py-1.5 rounded-lg transition-colors"
-                      style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}>Materiales</Link>
-                  </div>
+                  <Link href={`/student/courses/${e.courseId}`} className="block text-center text-[12px] py-1.5 rounded-lg transition-colors"
+                    style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}>Abrir curso</Link>
                 </div>
               </div>
             )

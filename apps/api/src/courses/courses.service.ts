@@ -34,6 +34,26 @@ export class CoursesService {
     return course
   }
 
+  // Enrolled students of a course (for teacher/admin course management)
+  async getRoster(courseId: string) {
+    const enrollments = await this.prisma.enrollment.findMany({
+      where: { courseId },
+      include: { student: { include: { user: { select: { id: true, fullName: true, email: true, avatarUrl: true } } } } },
+      orderBy: { enrolledAt: 'asc' },
+    })
+    return enrollments.map(e => ({
+      enrollmentId: e.id,
+      status: e.status,
+      enrolledAt: e.enrolledAt,
+      studentId: e.studentId,
+      userId: e.student.user.id,
+      fullName: e.student.user.fullName,
+      email: e.student.user.email,
+      avatarUrl: e.student.user.avatarUrl,
+      spanishLevel: e.student.spanishLevel,
+    }))
+  }
+
   async create(dto: CreateCourseDto) {
     // Auto-generate a unique course code if none was provided (e.g. ESP-B2-4821)
     const code = dto.code?.trim() || `ESP-${dto.level}-${Math.floor(1000 + Math.random() * 9000)}`

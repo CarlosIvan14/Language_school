@@ -65,11 +65,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit('message', message)
   }
 
+  // Recipient opened a conversation → mark all messages from `fromUser` as read,
+  // then tell the sender so their ticks flip to "read" (double check).
   @SubscribeMessage('mark_read')
-  async handleMarkRead(@ConnectedSocket() client: Socket, @MessageBody() data: { messageIds: string[] }) {
+  async handleMarkRead(@ConnectedSocket() client: Socket, @MessageBody() data: { fromUser: string }) {
+    const me = client.data.userId
+    if (!me || !data?.fromUser) return
+
     await this.prisma.message.updateMany({
-      where: { id: { in: data.messageIds }, recipientId: client.data.userId },
+      where: { senderId: data.fromUser, recipientId: me, readAt: null },
       data: { readAt: new Date() },
     })
+
+    const senderSocketId = this.userSockets.get(data.fromUser)
+    if (senderSocketId) {
+      this.server.to(senderSocketId).emit('read', { by: me })
+    }
   }
 }

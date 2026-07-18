@@ -20,6 +20,13 @@ export class CoursesController {
     return this.coursesService.findOne(id)
   }
 
+  @Get(':id/students')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  roster(@Param('id') id: string) {
+    return this.coursesService.getRoster(id)
+  }
+
   @Post()
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
