@@ -1,7 +1,9 @@
+// FILE: apps/web/src/app/(admin)/admin/certificates/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+import { Icon } from '@/components/Icon'
 
 export default function AdminCertificatesPage() {
   const [certs, setCerts] = useState<any[]>([])
@@ -12,8 +14,7 @@ export default function AdminCertificatesPage() {
 
   useEffect(() => {
     api.get<any[]>('/certificates/me').catch(() => [] as any[])
-      .then((c: any) => setCerts(Array.isArray(c) ? c : []))
-      .finally(() => setLoading(false))
+      .then((c: any) => setCerts(Array.isArray(c) ? c : [])).finally(() => setLoading(false))
   }, [])
 
   async function issueCert() {
@@ -29,65 +30,58 @@ export default function AdminCertificatesPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-medium text-foreground">Certificados</h1>
-        <p className="text-sm text-muted-foreground">Emisión y gestión de certificados</p>
+    <div className="p-6 max-w-[900px] mx-auto relative z-10">
+      <div className="mb-6 animate-fade-up">
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'rgb(var(--ink))' }}>Certificados</h1>
+        <p className="text-[13px] mt-1" style={{ color: 'rgb(var(--ink2))' }}>Emisión y gestión de certificados</p>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-5 mb-6">
-        <h2 className="font-heading text-sm font-medium mb-3">Emitir certificado</h2>
-        <div className="grid md:grid-cols-3 gap-3">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">ID del estudiante</label>
-            <input value={form.studentId} onChange={e => setForm(f => ({ ...f, studentId: e.target.value }))}
-              placeholder="student_id..."
-              className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">ID del curso</label>
-            <input value={form.courseId} onChange={e => setForm(f => ({ ...f, courseId: e.target.value }))}
-              placeholder="course_id..."
-              className="w-full border border-input rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-          </div>
-          <div className="flex items-end">
-            <button onClick={issueCert} disabled={issuing || !form.studentId || !form.courseId}
-              className="w-full bg-primary text-primary-foreground py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50">
-              {issuing ? 'Emitiendo...' : 'Emitir'}
-            </button>
-          </div>
+      <div className="bezel mb-4 animate-fade-up" style={{ animationDelay: '40ms' }}><div className="bezel-inner p-5">
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgb(var(--ink2))' }}>Emitir certificado</p>
+        <div className="grid grid-cols-3 gap-3">
+          <input value={form.studentId} onChange={e => setForm(f => ({ ...f, studentId: e.target.value }))} placeholder="ID del estudiante"
+            className="px-3 py-2 rounded-lg text-[13px] outline-none font-mono" style={inputStyle} />
+          <input value={form.courseId} onChange={e => setForm(f => ({ ...f, courseId: e.target.value }))} placeholder="ID del curso"
+            className="px-3 py-2 rounded-lg text-[13px] outline-none font-mono" style={inputStyle} />
+          <button onClick={issueCert} disabled={issuing || !form.studentId || !form.courseId} className="btn-primary py-2 disabled:opacity-50" style={{ borderRadius: '0.5rem' }}>
+            {issuing ? 'Emitiendo...' : 'Emitir'}
+          </button>
         </div>
-        {msg && (
-          <p className={`text-xs mt-2 ${msg.ok ? 'text-green-600' : 'text-destructive'}`}>{msg.text}</p>
-        )}
-      </div>
+        {msg && <p className="text-[12px] mt-2 flex items-center gap-1.5" style={{ color: msg.ok ? 'rgb(var(--ok))' : 'rgb(var(--err))' }}>
+          <Icon name={msg.ok ? 'check-circle' : 'alert-circle'} size={13} /> {msg.text}
+        </p>}
+      </div></div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <p className="text-sm font-medium text-foreground">Últimos certificados emitidos</p>
+      <div className="bezel animate-fade-up" style={{ animationDelay: '80ms' }}><div className="bezel-inner">
+        <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(var(--bd))' }}>
+          <p className="text-[12px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>Últimos certificados emitidos</p>
         </div>
         {loading ? (
-          <div className="p-4 space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-secondary rounded animate-pulse" />)}</div>
+          <div className="p-4 space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 rounded animate-pulse" style={{ background: 'rgb(var(--s2))' }} />)}</div>
         ) : !certs.length ? (
-          <p className="text-sm text-muted-foreground p-4 text-center">Sin certificados aún.</p>
+          <p className="text-[13px] p-6 text-center" style={{ color: 'rgb(var(--ink2))' }}>Sin certificados aún</p>
         ) : (
-          <div className="divide-y divide-border">
+          <div>
             {certs.map(c => (
-              <div key={c.id} className="flex items-center gap-3 px-4 py-3">
+              <div key={c.id} className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(var(--bd-soft))' }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(245,166,35,0.12)' }}>
+                  <Icon name="award" size={15} style={{ color: 'rgb(var(--gold))' }} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground truncate">{c.student?.user?.fullName ?? 'Estudiante'}</p>
-                  <p className="text-xs text-muted-foreground">{c.course?.title} · Nivel {c.course?.level}</p>
+                  <p className="text-[13px] truncate" style={{ color: 'rgb(var(--ink))' }}>{c.student?.user?.fullName ?? 'Estudiante'}</p>
+                  <p className="text-[11px]" style={{ color: 'rgb(var(--ink2))' }}>{c.course?.title} · Nivel {c.course?.level}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-xs text-muted-foreground">{new Date(c.issuedAt).toLocaleDateString('es')}</p>
-                  <a href={`/certificates/verify/${c.validationHash}`} target="_blank" rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline">Verificar</a>
+                  <p className="text-[11px]" style={{ color: 'rgb(var(--ink2))' }}>{new Date(c.issuedAt).toLocaleDateString('es')}</p>
+                  <a href={`/certificates/verify/${c.validationHash}`} target="_blank" rel="noopener noreferrer" className="text-[11px]" style={{ color: 'rgb(var(--blue))' }}>Verificar</a>
                 </div>
               </div>
             ))}
           </div>
         )}
-      </div>
+      </div></div>
     </div>
   )
 }
+
+const inputStyle: React.CSSProperties = { background: 'rgb(var(--s2))', border: '1px solid rgba(255,255,255,0.06)', color: 'rgb(var(--ink))' }

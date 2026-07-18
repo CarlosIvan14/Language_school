@@ -1,75 +1,80 @@
+// FILE: apps/web/src/app/(admin)/admin/reports/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
+
+const STAGE_COLORS: Record<string, string> = {
+  lead: 'rgb(var(--ink3))', contacted: 'rgb(var(--blue))', demo: 'rgb(var(--gold))',
+  converted: 'rgb(var(--ok))', lost: 'rgb(var(--err))',
+}
+const STAGE_LABELS: Record<string, string> = {
+  lead: 'Lead', contacted: 'Contactado', demo: 'Demo', converted: 'Cliente', lost: 'Perdido',
+}
 
 export default function AdminReportsPage() {
   const [data, setData] = useState<any>(null)
   const [funnel, setFunnel] = useState<any[]>([])
 
   useEffect(() => {
-    Promise.all([
-      api.get<any>('/admin/dashboard'),
-      api.get<any[]>('/crm/funnel'),
-    ]).then(([d, f]) => { setData(d); setFunnel(f) }).catch(() => {})
+    Promise.all([api.get<any>('/admin/dashboard'), api.get<any[]>('/crm/funnel')])
+      .then(([d, f]) => { setData(d); setFunnel(f) }).catch(() => {})
   }, [])
 
+  const rows = [
+    { label: 'Total estudiantes', value: data?.totalStudents ?? '—' },
+    { label: 'Cursos activos', value: data?.activeCourses ?? '—' },
+    { label: 'Tasa de asistencia', value: data ? `${data.attendanceRate}%` : '—' },
+    { label: 'Certificados emitidos', value: data?.totalCertificates ?? '—' },
+  ]
+  const max = Math.max(...funnel.map(x => x.count), 1)
+
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-medium text-foreground">Reportes</h1>
-        <p className="text-sm text-muted-foreground">Estadísticas del negocio</p>
+    <div className="p-6 max-w-[1140px] mx-auto relative z-10">
+      <div className="mb-6 animate-fade-up">
+        <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'rgb(var(--ink))' }}>Reportes</h1>
+        <p className="text-[13px] mt-1" style={{ color: 'rgb(var(--ink2))' }}>Estadísticas del negocio</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-card border border-border rounded-xl p-5">
-          <h2 className="font-heading text-sm font-medium mb-4">Resumen académico</h2>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="bezel animate-fade-up" style={{ animationDelay: '40ms' }}><div className="bezel-inner p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgb(var(--ink2))' }}>Resumen académico</p>
           <div className="space-y-3">
-            {[
-              { label: 'Total estudiantes', value: data?.totalStudents ?? '—' },
-              { label: 'Cursos activos', value: data?.activeCourses ?? '—' },
-              { label: 'Tasa de asistencia', value: data ? `${data.attendanceRate}%` : '—' },
-              { label: 'Certificados emitidos', value: data?.totalCertificates ?? '—' },
-            ].map(r => (
+            {rows.map(r => (
               <div key={r.label} className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{r.label}</span>
-                <span className="text-sm font-medium text-foreground">{r.value}</span>
+                <span className="text-[13px]" style={{ color: 'rgb(var(--ink2))' }}>{r.label}</span>
+                <span className="text-[14px] font-mono font-medium" style={{ color: 'rgb(var(--ink))' }}>{r.value}</span>
               </div>
             ))}
           </div>
-        </div>
+        </div></div>
 
-        <div className="bg-card border border-border rounded-xl p-5">
-          <h2 className="font-heading text-sm font-medium mb-4">Ingresos del mes</h2>
+        <div className="bezel animate-fade-up" style={{ animationDelay: '80ms' }}><div className="bezel-inner p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgb(var(--ink2))' }}>Ingresos del mes</p>
           <div className="text-center py-4">
-            <p className="text-4xl font-heading font-medium text-foreground">
+            <p className="font-mono text-4xl font-medium" style={{ color: 'rgb(var(--ok))' }}>
               ${data ? (data.monthlyRevenueCents / 100).toLocaleString() : '—'}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">USD — mes actual</p>
+            <p className="text-[12px] mt-1" style={{ color: 'rgb(var(--ink2))' }}>USD — mes actual</p>
           </div>
-        </div>
+        </div></div>
       </div>
 
-      <div className="bg-card border border-border rounded-xl p-5">
-        <h2 className="font-heading text-sm font-medium mb-4">Embudo de ventas (CRM)</h2>
-        <div className="flex items-end gap-3 h-32">
+      <div className="bezel animate-fade-up" style={{ animationDelay: '120ms' }}><div className="bezel-inner p-5">
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-5" style={{ color: 'rgb(var(--ink2))' }}>Embudo de ventas (CRM)</p>
+        <div className="flex items-end gap-3 h-40">
           {funnel.map(f => {
-            const max = Math.max(...funnel.map(x => x.count), 1)
             const pct = (f.count / max) * 100
-            const colors: Record<string, string> = {
-              lead: 'bg-blue-400', contacted: 'bg-amber-400', demo: 'bg-purple-400',
-              converted: 'bg-green-500', lost: 'bg-red-400',
-            }
             return (
-              <div key={f.stage} className="flex-1 flex flex-col items-center gap-1">
-                <span className="text-xs font-medium text-foreground">{f.count}</span>
-                <div className={`w-full rounded-t-md ${colors[f.stage] ?? 'bg-primary'} transition-all`} style={{ height: `${pct}%`, minHeight: f.count > 0 ? 8 : 0 }} />
-                <span className="text-[10px] text-muted-foreground capitalize">{f.stage}</span>
+              <div key={f.stage} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                <span className="text-[13px] font-mono font-medium" style={{ color: 'rgb(var(--ink))' }}>{f.count}</span>
+                <div className="w-full rounded-t-md transition-all" style={{ height: `${pct}%`, minHeight: f.count > 0 ? 8 : 2, background: STAGE_COLORS[f.stage] ?? 'rgb(var(--blue))' }} />
+                <span className="text-[10px]" style={{ color: 'rgb(var(--ink2))' }}>{STAGE_LABELS[f.stage] ?? f.stage}</span>
               </div>
             )
           })}
         </div>
-      </div>
+      </div></div>
     </div>
   )
 }
