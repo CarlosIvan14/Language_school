@@ -25,7 +25,10 @@ const ATT = {
 } as const
 
 function initials(n?: string) { return (n ?? '').split(' ').filter(Boolean).map(x => x[0]).slice(0,2).join('').toUpperCase() || '?' }
-const card = 'rgb(var(--s1))'
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'
+const API_ORIGIN = API_URL.replace(/\/api\/v1\/?$/, '')
+function fileHref(sp?: string) { return !sp ? '#' : sp.startsWith('http') ? sp : `${API_ORIGIN}${sp}` }
+const inputStyle: React.CSSProperties = { background: 'rgb(var(--s2))', border: '1px solid rgba(255,255,255,0.06)', color: 'rgb(var(--ink))' }
 
 export default function TeacherCourseDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -33,20 +36,14 @@ export default function TeacherCourseDetailPage() {
   const [tab, setTab] = useState<Tab>('students')
 
   const [roster, setRoster] = useState<any[] | null>(null)
-  const [homework, setHomework] = useState<any[] | null>(null)
-  const [materials, setMaterials] = useState<any[] | null>(null)
 
   useEffect(() => { api.get(`/courses/${id}`).then(setCourse).catch(() => {}) }, [id])
 
   const loadRoster = useCallback(() => { if (roster === null) api.get<any[]>(`/courses/${id}/students`).then(setRoster).catch(() => setRoster([])) }, [id, roster])
-  const loadHomework = useCallback(() => { if (homework === null) api.get<any[]>(`/courses/${id}/homework`).then(setHomework).catch(() => setHomework([])) }, [id, homework])
-  const loadMaterials = useCallback(() => { if (materials === null) api.get<any[]>(`/courses/${id}/materials`).then(setMaterials).catch(() => setMaterials([])) }, [id, materials])
 
   useEffect(() => {
     if (tab === 'students' || tab === 'attendance') loadRoster()
-    if (tab === 'homework' || tab === 'grades') loadHomework()
-    if (tab === 'materials') loadMaterials()
-  }, [tab, loadRoster, loadHomework, loadMaterials])
+  }, [tab, loadRoster])
 
   const level = course?.level
   const sessions = course?.sessions ?? []
@@ -89,9 +86,9 @@ export default function TeacherCourseDetailPage() {
         {tab === 'students' && <StudentsTab roster={roster} />}
         {tab === 'sessions' && <SessionsTab sessions={sessions} />}
         {tab === 'attendance' && <AttendanceTab courseId={id} sessions={sessions} roster={roster} />}
-        {tab === 'homework' && <HomeworkTab homework={homework} />}
-        {tab === 'grades' && <GradesTab homework={homework} />}
-        {tab === 'materials' && <MaterialsTab materials={materials} />}
+        {tab === 'homework' && <HomeworkTab courseId={id} />}
+        {tab === 'grades' && <GradesTab courseId={id} />}
+        {tab === 'materials' && <MaterialsTab courseId={id} />}
       </div>
     </div>
   )
@@ -207,25 +204,58 @@ function AttendanceTab({ courseId, sessions, roster }: { courseId: string; sessi
   )
 }
 
-function HomeworkTab({ homework }: { homework: any[] | null }) {
-  if (homework === null) return <Loading />
-  if (!homework.length) return <Empty icon="clipboard" text="Sin tareas creadas" />
+function HomeworkTab({ courseId }: { courseId: string }) {
+  const [homework, setHomework] = useState<any[] | null>(null)
+  const [form, setForm] = useState({ title: '', instructions: '', dueAt: '', maxScore: 100 })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const load = useCallback(() => api.get<any[]>(`/courses/${courseId}/homework`).then(setHomework).catch(() => setHomework([])), [courseId])
+  useEffect(() => { load() }, [load])
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.title.trim() || !form.dueAt) { setError('Título y fecha de entrega son obligatorios'); return }
+    setSaving(true); setError('')
+    try {
+      await api.post(`/courses/${courseId}/homework`, { title: form.title, instructions: form.instructions || undefined, dueAt: new Date(form.dueAt).toISOString(), maxScore: Number(form.maxScore) })
+      setForm({ title: '', instructions: '', dueAt: '', maxScore: 100 }); load()
+    } catch (e: any) { setError(e.message ?? 'Error') } finally { setSaving(false) }
+  }
+
   return (
-    <div className="space-y-2">
-      {homework.map((hw: any) => (
-        <div key={hw.id} className="bezel"><div className="bezel-inner p-4 flex items-center justify-between">
-          <div>
-            <p className="text-[13px] font-medium" style={{ color: 'rgb(var(--ink))' }}>{hw.title}</p>
-            <p className="text-[11px] mt-0.5" style={{ color: 'rgb(var(--ink2))' }}>Vence: {new Date(hw.dueAt).toLocaleDateString('es')}</p>
+    <div className="space-y-3">
+      <div className="bezel"><div className="bezel-inner p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgb(var(--ink2))' }}>Nueva tarea</p>
+        <form onSubmit={add} className="space-y-2">
+          <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Título de la tarea" className="w-full px-3 py-2 rounded-lg text-[13px] outline-none" style={inputStyle} />
+          <textarea value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))} rows={2} placeholder="Instrucciones / ejercicios en línea..." className="w-full px-3 py-2 rounded-lg text-[13px] outline-none resize-none" style={inputStyle} />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="datetime-local" value={form.dueAt} onChange={e => setForm(f => ({ ...f, dueAt: e.target.value }))} className="px-3 py-2 rounded-lg text-[13px] outline-none" style={inputStyle} />
+            <input type="number" min={1} max={100} value={form.maxScore} onChange={e => setForm(f => ({ ...f, maxScore: Number(e.target.value) }))} placeholder="Puntos" className="px-3 py-2 rounded-lg text-[13px] outline-none font-mono" style={inputStyle} />
           </div>
-          <span className="px-2 py-1 rounded-full text-[11px] font-medium" style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}>{hw._count?.submissions ?? 0} entregas</span>
-        </div></div>
-      ))}
+          {error && <p className="text-[12px] flex items-center gap-1.5" style={{ color: 'rgb(var(--err))' }}><Icon name="alert-circle" size={13} /> {error}</p>}
+          <button type="submit" disabled={saving} className="btn-primary py-2 text-[13px] w-full disabled:opacity-50" style={{ borderRadius: '0.5rem' }}>{saving ? 'Creando...' : 'Crear tarea'}</button>
+        </form>
+      </div></div>
+
+      {homework === null ? <Loading /> : !homework.length ? <Empty icon="clipboard" text="Sin tareas creadas" /> : (
+        <div className="space-y-2">
+          {homework.map((hw: any) => (
+            <div key={hw.id} className="bezel"><div className="bezel-inner p-4 flex items-center justify-between">
+              <div><p className="text-[13px] font-medium" style={{ color: 'rgb(var(--ink))' }}>{hw.title}</p><p className="text-[11px] mt-0.5" style={{ color: 'rgb(var(--ink2))' }}>Vence: {new Date(hw.dueAt).toLocaleDateString('es')}</p></div>
+              <span className="px-2 py-1 rounded-full text-[11px] font-medium" style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}>{hw._count?.submissions ?? 0} entregas</span>
+            </div></div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
-function GradesTab({ homework }: { homework: any[] | null }) {
+function GradesTab({ courseId }: { courseId: string }) {
+  const [homework, setHomework] = useState<any[] | null>(null)
+  useEffect(() => { api.get<any[]>(`/courses/${courseId}/homework`).then(setHomework).catch(() => setHomework([])) }, [courseId])
   if (homework === null) return <Loading />
   const withSubs = homework.filter((hw: any) => (hw._count?.submissions ?? 0) > 0)
   if (!withSubs.length) return <Empty icon="bar-chart" text="Sin entregas por calificar" />
@@ -241,20 +271,83 @@ function GradesTab({ homework }: { homework: any[] | null }) {
   )
 }
 
-function MaterialsTab({ materials }: { materials: any[] | null }) {
-  if (materials === null) return <Loading />
-  if (!materials.length) return <Empty icon="folder" text="Sin materiales subidos" />
+const MAT_ICON: Record<string, IconName> = { pdf: 'file-text', image: 'file-text', video: 'video', audio: 'message', link: 'arrow-right', exercise: 'edit' }
+
+function MaterialsTab({ courseId }: { courseId: string }) {
+  const [materials, setMaterials] = useState<any[] | null>(null)
+  const [mode, setMode] = useState<'file' | 'link'>('file')
+  const [title, setTitle] = useState('')
+  const [type, setType] = useState('pdf')
+  const [url, setUrl] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const load = useCallback(() => api.get<any[]>(`/courses/${courseId}/materials`).then(setMaterials).catch(() => setMaterials([])), [courseId])
+  useEffect(() => { load() }, [load])
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) { setError('Pon un título'); return }
+    if (mode === 'file' && !file) { setError('Elige un archivo'); return }
+    if (mode === 'link' && !url.trim()) { setError('Pon el enlace'); return }
+    setSaving(true); setError('')
+    try {
+      const fd = new FormData()
+      fd.append('title', title)
+      fd.append('type', mode === 'link' ? 'link' : type)
+      if (mode === 'file' && file) fd.append('file', file)
+      if (mode === 'link') fd.append('url', url)
+      const token = localStorage.getItem('access_token')
+      const res = await fetch(`${API_URL}/courses/${courseId}/materials`, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : undefined, body: fd })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message ?? 'Error al subir')
+      setTitle(''); setUrl(''); setFile(null); load()
+    } catch (e: any) { setError(e.message ?? 'Error') } finally { setSaving(false) }
+  }
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {materials.map((m: any) => (
-        <a key={m.id} href={m.fileUrl ?? '#'} target="_blank" rel="noreferrer" className="bezel"><div className="bezel-inner p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}><Icon name="file-text" size={18} /></div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>{m.title}</p>
-            <p className="text-[10px]" style={{ color: 'rgb(var(--ink3))' }}>{String(m.type).toUpperCase()}</p>
-          </div>
-        </div></a>
-      ))}
+    <div className="space-y-3">
+      {/* Upload form */}
+      <div className="bezel"><div className="bezel-inner p-4">
+        <div className="flex gap-1.5 mb-3">
+          {(['file','link'] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+              style={{ background: mode === m ? 'rgba(79,142,247,0.15)' : 'rgb(var(--s2))', color: mode === m ? 'rgb(var(--blue))' : 'rgb(var(--ink2))', border: mode === m ? '1px solid rgba(79,142,247,0.3)' : '1px solid transparent' }}>
+              {m === 'file' ? 'Archivo (PDF/imagen)' : 'Enlace'}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={add} className="grid grid-cols-2 gap-2">
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título" className="px-3 py-2 rounded-lg text-[13px] outline-none col-span-2" style={inputStyle} />
+          {mode === 'file' ? (
+            <>
+              <select value={type} onChange={e => setType(e.target.value)} className="px-3 py-2 rounded-lg text-[13px] outline-none" style={inputStyle}>
+                <option value="pdf">PDF</option><option value="image">Imagen</option><option value="video">Video</option><option value="audio">Audio</option>
+              </select>
+              <input type="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.mp4,.mp3" onChange={e => setFile(e.target.files?.[0] ?? null)} className="text-[12px]" style={{ color: 'rgb(var(--ink2))' }} />
+            </>
+          ) : (
+            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://..." className="px-3 py-2 rounded-lg text-[13px] outline-none col-span-2 font-mono" style={inputStyle} />
+          )}
+          {error && <p className="text-[12px] col-span-2 flex items-center gap-1.5" style={{ color: 'rgb(var(--err))' }}><Icon name="alert-circle" size={13} /> {error}</p>}
+          <button type="submit" disabled={saving} className="btn-primary py-2 text-[13px] col-span-2 disabled:opacity-50" style={{ borderRadius: '0.5rem' }}>{saving ? 'Subiendo...' : 'Añadir material'}</button>
+        </form>
+      </div></div>
+
+      {/* List */}
+      {materials === null ? <Loading /> : !materials.length ? <Empty icon="folder" text="Sin materiales subidos" /> : (
+        <div className="grid grid-cols-2 gap-3">
+          {materials.map((m: any) => (
+            <a key={m.id} href={fileHref(m.storagePath)} target="_blank" rel="noreferrer" className="bezel"><div className="bezel-inner p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}><Icon name={MAT_ICON[m.type] ?? 'file-text'} size={18} /></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>{m.title}</p>
+                <p className="text-[10px]" style={{ color: 'rgb(var(--ink3))' }}>{String(m.type).toUpperCase()}</p>
+              </div>
+            </div></a>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

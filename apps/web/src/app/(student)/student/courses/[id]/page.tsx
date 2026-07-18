@@ -8,6 +8,10 @@ import { api } from '@/lib/api'
 import { Icon, type IconName } from '@/components/Icon'
 import { ZoomLogo } from '@/components/ZoomLogo'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'
+const API_ORIGIN = API_URL.replace(/\/api\/v1\/?$/, '')
+function fileHref(sp?: string) { return !sp ? '#' : sp.startsWith('http') ? sp : `${API_ORIGIN}${sp}` }
+
 type Tab = 'materials' | 'homework' | 'sessions'
 const TABS: { key: Tab; label: string; icon: IconName }[] = [
   { key: 'materials', label: 'Materiales', icon: 'folder' },
@@ -76,7 +80,7 @@ export default function StudentCourseDetailPage() {
           materials === null ? <Loading /> : !materials.length ? <Empty icon="folder" text="Sin materiales disponibles" /> : (
             <div className="grid grid-cols-2 gap-3">
               {materials.map((m: any) => (
-                <a key={m.id} href={m.fileUrl ?? '#'} target="_blank" rel="noreferrer" className="bezel"><div className="bezel-inner p-4 flex items-center gap-3">
+                <a key={m.id} href={fileHref(m.storagePath)} target="_blank" rel="noreferrer" className="bezel"><div className="bezel-inner p-4 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(79,142,247,0.12)', color: 'rgb(var(--blue))' }}><Icon name="file-text" size={18} /></div>
                   <div className="flex-1 min-w-0"><p className="text-[13px] font-medium truncate" style={{ color: 'rgb(var(--ink))' }}>{m.title}</p><p className="text-[10px]" style={{ color: 'rgb(var(--ink3))' }}>{String(m.type).toUpperCase()}</p></div>
                 </div></a>

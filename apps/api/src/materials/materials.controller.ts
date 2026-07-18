@@ -32,12 +32,14 @@ export class MaterialsController {
   }))
   create(
     @Param('courseId') courseId: string,
-    @Body() body: { title: string; type: string; description?: string },
+    @Body() body: { title: string; type: string; description?: string; url?: string },
     @UploadedFile() file: Express.Multer.File,
     @Req() req: any,
   ) {
+    // A material is either an uploaded file (/uploads/...) or an external link (url)
+    const storagePath = file ? `/uploads/${file.filename}` : (body.url || undefined)
     return this.materialsService.create(
-      { ...body, courseId, storagePath: file ? `/uploads/${file.filename}` : undefined },
+      { title: body.title, type: body.type, description: body.description, courseId, storagePath },
       req.user.id,
     )
   }
