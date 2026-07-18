@@ -313,13 +313,13 @@ export default function CoursesPage() {
                         <span className="font-mono text-[17px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>
                           ${(course.priceCents / 100).toFixed(2)}
                         </span>
-                        <span className="text-[11px] ml-1" style={{ color: 'rgb(var(--ink3))' }}>MXN/mes</span>
+                        <span className="text-[11px] ml-1" style={{ color: 'rgb(var(--ink3))' }}>USD/hora</span>
                       </div>
                       <Link
-                        href="/register"
+                        href={`/courses/${course.id}`}
                         className="btn-primary text-[12px] px-3 py-1.5 flex items-center gap-1.5"
                       >
-                        Inscribirse <ArrowRight size={12} />
+                        Ver e inscribirse <ArrowRight size={12} />
                       </Link>
                     </div>
                   </div>
