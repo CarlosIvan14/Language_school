@@ -10,6 +10,7 @@ import { Icon } from '@/components/Icon'
 const nav = [
   { href: '/admin/dashboard',    label: 'Dashboard',    icon: 'home'        as const },
   { href: '/admin/students',     label: 'Estudiantes',  icon: 'users'       as const },
+  { href: '/admin/teachers',     label: 'Profesores',   icon: 'award'       as const },
   { href: '/admin/courses',      label: 'Cursos',       icon: 'book'        as const },
   { href: '/admin/payments',     label: 'Pagos',        icon: 'credit-card' as const },
   { href: '/admin/crm',          label: 'CRM',          icon: 'funnel'      as const },

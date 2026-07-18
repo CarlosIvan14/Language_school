@@ -69,6 +69,33 @@ export default function CrmPage() {
   const [actForm, setActForm] = useState({ type: 'call' as 'call' | 'email' | 'whatsapp', notes: '' })
   const [actLoading, setActLoading] = useState(false)
 
+  // Convert-to-student flow
+  const [convertOpen, setConvertOpen] = useState(false)
+  const [convertForm, setConvertForm] = useState({ password: '', spanishLevel: 'A1' })
+  const [convertLoading, setConvertLoading] = useState(false)
+  const [convertResult, setConvertResult] = useState<{ email: string; tempPassword: string; generated: boolean } | null>(null)
+  const [convertError, setConvertError] = useState('')
+
+  async function convertToStudent() {
+    if (!selected) return
+    setConvertLoading(true); setConvertError('')
+    try {
+      const res = await api.post<{ email: string; tempPassword: string; generated: boolean }>(
+        `/crm/prospects/${selected.id}/convert`,
+        { password: convertForm.password || undefined, spanishLevel: convertForm.spanishLevel },
+      )
+      setConvertResult(res)
+      // Reflect converted stage locally
+      setProspects(prev => prev.map(p => p.id === selected.id ? { ...p, stage: 'converted' } : p))
+      setSelected(prev => prev ? { ...prev, stage: 'converted' } : null)
+      load()
+    } catch (e: any) {
+      setConvertError(e.message ?? 'No se pudo convertir el cliente')
+    } finally {
+      setConvertLoading(false)
+    }
+  }
+
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -129,7 +156,7 @@ export default function CrmPage() {
       setShowAddModal(false)
       setAddForm({ name: '', email: '', phone: '', source: '' })
     } catch (e: any) {
-      setAddError(e.message ?? 'Error al agregar prospecto')
+      setAddError(e.message ?? 'Error al agregar cliente')
     } finally {
       setAddLoading(false)
     }
@@ -143,12 +170,12 @@ export default function CrmPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0 animate-fade-up">
         <div>
-          <h1 className="text-xl font-semibold" style={{ color: 'rgb(var(--ink))' }}>CRM</h1>
-          <p className="text-[12px] mt-0.5" style={{ color: 'rgb(var(--ink2))' }}>Gestión de prospectos y embudo de ventas</p>
+          <h1 className="text-xl font-semibold" style={{ color: 'rgb(var(--ink))' }}>CRM · Clientes</h1>
+          <p className="text-[12px] mt-0.5" style={{ color: 'rgb(var(--ink2))' }}>Gestión de clientes y embudo de ventas</p>
         </div>
         <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center gap-2 text-[13px]">
           <Icon name="plus" size={14} />
-          Nuevo prospecto
+          Nuevo cliente
         </button>
       </div>
 
@@ -294,6 +321,15 @@ export default function CrmPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Convert to student */}
+              <button
+                onClick={() => { setConvertOpen(true); setConvertResult(null); setConvertError(''); setConvertForm({ password: '', spanishLevel: 'A1' }) }}
+                className="mt-3 w-full flex items-center justify-center gap-2 text-[12px] py-2 rounded-lg font-medium transition-all"
+                style={{ background: 'rgba(52,211,153,0.12)', color: 'rgb(var(--ok))', border: '1px solid rgba(52,211,153,0.3)' }}>
+                <Icon name="check-circle" size={14} />
+                Convertir a estudiante
+              </button>
             </div>
 
             {/* Add activity */}
@@ -380,7 +416,7 @@ export default function CrmPage() {
             <div className="bezel-inner p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[15px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>
-                  Nuevo prospecto
+                  Nuevo cliente
                 </h2>
                 <button onClick={() => setShowAddModal(false)} className="btn-ghost p-1.5 rounded-lg">
                   <Icon name="x" size={16} />
@@ -424,9 +460,89 @@ export default function CrmPage() {
                 </button>
                 <button onClick={addProspect} disabled={addLoading || !addForm.name.trim() || !addForm.email.trim()}
                   className="btn-primary flex-1 text-[13px] py-2 disabled:opacity-50">
-                  {addLoading ? 'Guardando...' : 'Crear prospecto'}
+                  {addLoading ? 'Guardando...' : 'Crear cliente'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Convert-to-student modal */}
+      {convertOpen && selected && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+          style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setConvertOpen(false) }}>
+          <div className="bezel w-[420px] animate-fade-up">
+            <div className="bezel-inner p-6">
+              {convertResult ? (
+                <>
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(52,211,153,0.15)' }}>
+                      <Icon name="check-circle" size={18} style={{ color: 'rgb(var(--ok))' }} />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>¡Estudiante creado!</p>
+                      <p className="text-[11px]" style={{ color: 'rgb(var(--ink2))' }}>Comparte estas credenciales con el cliente</p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg p-3 space-y-2 mb-4" style={{ background: 'rgb(var(--s2))', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="flex justify-between text-[12px]">
+                      <span style={{ color: 'rgb(var(--ink2))' }}>Correo</span>
+                      <span className="font-mono" style={{ color: 'rgb(var(--ink))' }}>{convertResult.email}</span>
+                    </div>
+                    <div className="flex justify-between text-[12px]">
+                      <span style={{ color: 'rgb(var(--ink2))' }}>Contraseña {convertResult.generated ? '(temporal)' : ''}</span>
+                      <span className="font-mono" style={{ color: 'rgb(var(--ok))' }}>{convertResult.tempPassword}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setConvertOpen(false)} className="btn-primary w-full py-2 text-[13px]" style={{ borderRadius: '0.5rem' }}>
+                    Entendido
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-[15px] font-semibold" style={{ color: 'rgb(var(--ink))' }}>Convertir a estudiante</h2>
+                    <button onClick={() => setConvertOpen(false)} style={{ color: 'rgb(var(--ink2))' }}><Icon name="x" size={16} /></button>
+                  </div>
+                  <p className="text-[12px] mb-4" style={{ color: 'rgb(var(--ink2))' }}>
+                    Se creará una cuenta de estudiante para <strong style={{ color: 'rgb(var(--ink))' }}>{selected.name}</strong> ({selected.email}).
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: 'rgb(var(--ink2))' }}>Nivel inicial</label>
+                      <select value={convertForm.spanishLevel} onChange={e => setConvertForm(f => ({ ...f, spanishLevel: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg text-[13px] outline-none"
+                        style={{ background: 'rgb(var(--s2))', border: '1px solid rgba(255,255,255,0.06)', color: 'rgb(var(--ink))' }}>
+                        {['A1','A2','B1','B2','C1','C2'].map(l => <option key={l} value={l}>{l}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: 'rgb(var(--ink2))' }}>
+                        Contraseña (opcional — si la dejas vacía se genera una)
+                      </label>
+                      <input value={convertForm.password} onChange={e => setConvertForm(f => ({ ...f, password: e.target.value }))}
+                        type="text" placeholder="Se generará automáticamente"
+                        className="w-full px-3 py-2 rounded-lg text-[13px] outline-none font-mono"
+                        style={{ background: 'rgb(var(--s2))', border: '1px solid rgba(255,255,255,0.06)', color: 'rgb(var(--ink))' }} />
+                    </div>
+                  </div>
+                  {convertError && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] mt-3"
+                      style={{ background: 'rgba(248,113,113,0.08)', color: 'rgb(var(--err))', border: '1px solid rgba(248,113,113,0.15)' }}>
+                      <Icon name="alert-circle" size={14} /> {convertError}
+                    </div>
+                  )}
+                  <div className="flex gap-2 mt-5">
+                    <button onClick={() => setConvertOpen(false)} className="btn-ghost flex-1 text-[13px] py-2">Cancelar</button>
+                    <button onClick={convertToStudent} disabled={convertLoading}
+                      className="btn-primary flex-1 text-[13px] py-2 disabled:opacity-50">
+                      {convertLoading ? 'Creando...' : 'Crear estudiante'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
